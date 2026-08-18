@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { getDb } from '../database/database';
-import type { Document } from '../models/document';
+import type { Document } from '../models';
 import { deletePdf, replacePdf, savePdf } from '../services/file.service';
 
 export class DocumentRepository {
@@ -49,7 +49,6 @@ export class DocumentRepository {
         if (data && data.pdf) {
             const buffer = Buffer.from(data.pdf);
             const { fileSize } = await replacePdf(buffer, data.file_path);
-            console.log(data);
             let result = getDb().prepare(`UPDATE documents SET title = @title, document_date = @document_date, document_number = @document_number, total_pages = @total_pages, file_path = @file_path, file_size = @file_size, notes = @notes WHERE id = @id`).run({
                 title: data.title,
                 document_date: data.document_date,
@@ -72,7 +71,6 @@ export class DocumentRepository {
                     deleteTag.run({ id: data.id, tagId });
                 }
                 for (const tagId of tagsToAdd) {
-                    console.log(tagId);
                     insertTag.run({ id: data.id, tagId });
                 }
             }

@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { TagRepository } from '../repositories/tag.repository';
-import { Tag } from '../models/tag';
+import { Tag } from '../models';
 
 export function registerTagIpc() {
     ipcMain.handle('tags:getAll', () => {

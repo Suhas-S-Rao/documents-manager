@@ -1,5 +1,5 @@
 import { getDb } from '../database/database';
-import type { Tag } from '../models/tag';
+import type { Tag } from '../models';
 
 export class TagRepository {
 

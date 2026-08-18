@@ -1,8 +1,5 @@
-import ScannerStatus from '../../components/dashboard/ScannerStatus';
-import GoogleDriveStatus from '../../components/dashboard/GoogleDriveStatus';
-import StorageCard from '../../components/dashboard/StorageCard';
-import { useData } from '../../context';
 import { useNavigate } from 'react-router-dom';
+import { useData } from '../../context';
 import { formatFileSize } from '../../utils/helpers';
 
 const Dashboard = () => {
@@ -26,11 +23,10 @@ const Dashboard = () => {
           ))}
         </div>
       )}
-      <div className="grid grid-cols-[2fr_1fr] gap-4">
+      <div className="grid grid-cols-[2fr_2fr] gap-4">
         <div className="rounded-xl border border-slate-200 bg-calm-surface p-6 shadow-soft">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-calm-text">Recent Documents</h2>
-
             <button
               className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-calm-text hover:bg-calm-background hover:text-calm-accent transition cursor-pointer"
               onClick={(e) => {
@@ -66,11 +62,6 @@ const Dashboard = () => {
                 </div>
               ))}
           </div>
-        </div>
-        <div className="space-y-4">
-          <ScannerStatus />
-          <GoogleDriveStatus />
-          <StorageCard />
         </div>
       </div>
     </div>

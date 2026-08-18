@@ -3,7 +3,6 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 
 import Dashboard from '../pages/Dashboard/Dashboard';
-import AddDocuments from '../pages/Documents/AddDocuments';
 import Documents from '../pages/Documents/Documents';
 import Tags from '../pages/Tags/Tags';
 import Settings from '../pages/Settings/Settings';
@@ -20,7 +19,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'addDocument',
-        element: <AddDocuments />
+        element: <Document />
       },
       {
         path: 'document',

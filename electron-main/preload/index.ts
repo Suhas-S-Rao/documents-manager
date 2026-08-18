@@ -1,7 +1,6 @@
-import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-import { Tag } from '../models/tag';
-import { Document } from '../models/document';
+import { contextBridge, ipcRenderer } from 'electron';
+import { Document, Tag } from '../models';
 const api = {
     documents: {
         getAll: () => ipcRenderer.invoke('documents:getAll'),
@@ -23,6 +22,12 @@ const api = {
         getScannersList: () => ipcRenderer.invoke('scanner:getScannersList'),
         scan: (options: any) => ipcRenderer.invoke('scanner:scan', options)
     },
+    googleDrive: {
+        getSettings: () => ipcRenderer.invoke('googleDrive:getSettings'),
+        updateSettings: (settings: unknown) => ipcRenderer.invoke('googleDrive:updateSettings', settings),
+        connect: () => ipcRenderer.invoke('googleDrive:connect'),
+        backup: () => ipcRenderer.invoke('googleDrive:backup')
+    }
 };
 
 export type API = typeof api;

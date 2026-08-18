@@ -2,16 +2,6 @@ import { execFile } from 'node:child_process';
 interface properties {
     color: "color" | "gray" | "bw";
     dpi: 75 | 100 | 150 | 200 | 300 | 400 | 600 | 800 | 1200 | 2400 | 4800;
-    autoCrop: boolean;
-    autoDeskew: boolean;
-    area: Area;
-}
-
-interface Area {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
 }
 
 const colorValue: Record<properties["color"], number> = {
@@ -19,6 +9,7 @@ const colorValue: Record<properties["color"], number> = {
     gray: 2,
     bw: 4
 };
+
 const runPowerShell = (script: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], (error, stdout) => {
@@ -64,33 +55,15 @@ $result | ConvertTo-Json
 
 }
 
-const scanDocument = async ({
-    dpi = 300,
-    color = 'color',
-    autoCrop = false,
-    autoDeskew = false,
-    area = {
-        x: 0,
-        y: 0,
-        width: 2480,
-        height: 3508
-    }
-}: properties) => {
+const scanDocument = async ({ dpi = 300, color = 'color' }: properties) => {
     const script = `
                     $manager = New-Object -ComObject WIA.DeviceManager
                     $deviceInfo = $manager.DeviceInfos.Item(1)
                     $device = $deviceInfo.Connect()
                     $item = $device.Items.Item(1)
-                    # DPI
                     $item.Properties.Item("6147").Value = ${dpi}
                     $item.Properties.Item("6148").Value = ${dpi}
-                    $item.Properties.Item("6146").Value = ${colorValue[color]}  
-                    $item.Properties.Item("6159").Value = ${autoCrop};
-                    $item.Properties.Item("6158").Value = ${autoDeskew};
-                    $item.Properties.Item("6149").Value = ${area.x};
-                    $item.Properties.Item("6150").Value = ${area.y};
-                    $item.Properties.Item("6151").Value = ${area.width};
-                    $item.Properties.Item("6152").Value = ${area.height};                  
+                    $item.Properties.Item("6146").Value = ${colorValue[color]}         
                     $image = $device.Items.Item(1).Transfer()
                     $file = "$env:TEMP\\scan_${Date.now()}.jpg"
                     $image.SaveFile($file)

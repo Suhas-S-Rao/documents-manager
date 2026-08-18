@@ -11,7 +11,8 @@
   --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.35);
 }
 
-input[type='date']::-webkit-calendar-picker-indicator {
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
   opacity: 0;
   position: absolute;
   right: 0;
@@ -21,7 +22,9 @@ input[type='date']::-webkit-calendar-picker-indicator {
 }
 
 input[type='date']::-webkit-inner-spin-button,
-input[type='date']::-webkit-clear-button {
+input[type='date']::-webkit-clear-button,
+input[type='time']::-webkit-inner-spin-button,
+input[type='time']::-webkit-clear-button {
   display: none;
 }
 

@@ -1,3 +1,5 @@
+import { GoogleDriveSettings } from "./types";
+
 const DpiDropdownOptions = [
     { label: "75", value: "75" },
     { label: "100", value: "100" },
@@ -38,4 +40,12 @@ const SortDropDownOptions = [
     { label: 'Z-A', value: 'Z-A' }
 ];
 
-export { DpiDropdownOptions, pageSizeDropdownOptions, ScannerColorDropDownOptions as ScannerColorDropDown, scanners, SortDropDownOptions };
+const GoogleDriveSettingsDefault: GoogleDriveSettings = {
+    enabled: false,
+    auto_backup: false,
+    backup_time: '',
+    folder_id: '',
+    last_backup: ''
+}
+
+export { DpiDropdownOptions, pageSizeDropdownOptions, ScannerColorDropDownOptions as ScannerColorDropDown, scanners, SortDropDownOptions, GoogleDriveSettingsDefault };

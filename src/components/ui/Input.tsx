@@ -30,7 +30,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, classNam
             ${className}
           `}
         value={value ?? ''}
-
         {...props}
       />
 

@@ -24,25 +24,17 @@ CREATE TABLE IF NOT EXISTS document_tags (
 );
 
 CREATE TABLE IF NOT EXISTS scanner_settings (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
+    id TEXT PRIMARY KEY CHECK (id = 1),
+    scanner_id TEXT,
     scanner_name TEXT,
     dpi INTEGER DEFAULT 300,
-    color_mode TEXT DEFAULT 'Color',
-    paper_size TEXT DEFAULT 'A4',
-    duplex INTEGER DEFAULT 0,
-    auto_crop INTEGER DEFAULT 1,
-    auto_rotate INTEGER DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS app_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
+    color_mode TEXT DEFAULT 'Color'
 );
 
 CREATE TABLE IF NOT EXISTS google_drive_backup (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
     enabled INTEGER DEFAULT 0,
+    auto_backup INTEGER DEFAULT 0,
+    backup_time TEXT,
     folder_id TEXT,
-    last_backup_at TEXT,
-    last_backup_status TEXT
+    last_backup TEXT
 );

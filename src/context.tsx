@@ -1,5 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import type { Document, Scanner, ScannerProperties, Tag } from './types';
+import type { Document, Scanner, ScannerProperties, Settings, Tag } from './types';
+import { GoogleDriveSettingsDefault } from './constants';
 
 interface DataType {
   documents: Document[];
@@ -13,6 +14,8 @@ interface DataType {
   setNewDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
   tags: Tag[];
   setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  settings: Settings;
+  setSettings: React.Dispatch<React.SetStateAction<Settings>>;
 }
 
 const DataContext = createContext<DataType | null>(null);
@@ -24,11 +27,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [scanners, setScanners] = useState<Scanner[]>([]);
   const [scannersProperties, setScannersProperties] = useState<ScannerProperties[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [settings, setSettings] = useState<Settings>({ scanner: [], google: GoogleDriveSettingsDefault });
 
   useEffect(() => {
     getScanners();
     getDocumentsList();
     getTags();
+    getGoogleDriveSettings();
   }, []);
 
   const getScanners = async () => {
@@ -43,6 +48,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const getTags = async () => {
     setTags(await window.api.tags.getAll());
   };
+
+  const getGoogleDriveSettings = async () => {
+    let googleSetting = await window.api.googleDrive.getSettings();
+    setSettings((prev) => ({ ...prev, google: googleSetting.data }));
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -56,7 +67,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         newDocuments,
         setNewDocuments,
         tags,
-        setTags
+        setTags,
+        settings,
+        setSettings
       }}
     >
       {children}

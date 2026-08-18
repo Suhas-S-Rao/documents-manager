@@ -78,17 +78,40 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadPages = async () => {
-      let doc = documents.find((x) => x.id === selectedDocumentId);
-      let pages = doc?.pages;
-      if (doc && doc.file_path && (doc.pages === undefined || doc.pages.length === 0)) {
-        let file = await loadFile(doc.file_path);
-        pages = await pdfToImagesHistory(file);
+      try {
+        const doc = documents.find((x) => x.id === selectedDocumentId);
+        if (!doc) {
+          setActiveDocumentPages([]);
+          return;
+        }
+        let pages = doc.pages;
+        if (doc.file_path && (!pages || pages.length === 0)) {
+          const file = await loadFile(doc.file_path);
+          if (file instanceof Error) {
+            toast.error('No Document found');
+            pages = [];
+          } else {
+            pages = await pdfToImagesHistory(file);
+          }
+        }
+        if (!cancelled) {
+          setActiveDocumentPages(pages ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setActiveDocumentPages([]);
+        }
+        console.error('Failed to load document pages', error);
       }
-      setActiveDocumentPages(pages ?? []);
     };
     loadPages();
-  }, [selectedDocumentId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDocumentId, documents]);
 
   const pdfToImagesHistory = async (file: File) => {
     return (await pdfToImages(file)).map((x) => ({ id: v4(), history: [x], activeHistory: 0 }));

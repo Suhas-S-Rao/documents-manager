@@ -73,7 +73,20 @@ interface Tag {
     color: string;
     documentCount: number;
 }
+
 type PageSize = "5" | "10" | "20" | "50" | "100" | "All";
 
-export type { CreateDocumentRequest, Document, DocumentRequest, DPI, Page, PageSize, Scanner, ScannerColor, ScannerProperties, ScannerSettings, Tag };
+interface GoogleDriveSettings {
+    enabled: boolean,
+    auto_backup: boolean,
+    backup_time: string | null,
+    folder_id: string | null,
+    last_backup: string | null
+}
 
+interface Settings {
+    scanner: ScannerSettings[],
+    google: GoogleDriveSettings
+}
+
+export type { CreateDocumentRequest, Document, DocumentRequest, DPI, GoogleDriveSettings, Page, PageSize, Scanner, ScannerColor, ScannerProperties, ScannerSettings, Settings, Tag };

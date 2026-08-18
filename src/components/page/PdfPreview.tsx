@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
 import { useData } from '../../context';
 import type { Document as DocumentType, Page } from '../../types';
@@ -23,8 +24,14 @@ const PdfPreview = () => {
     const loadPdf = async () => {
       if (doc.file_path && (!doc.pages || doc.pages.length === 0)) {
         const file = await loadFile(doc.file_path);
-        const pages = (await pdfToImages(file)).map((x) => ({ id: v4(), history: [x], activeHistory: 0 }));
-        const updatedDoc = { ...doc, pages };
+        let updatedDoc: DocumentType;
+        let pages: Page[] = [];
+        if (file instanceof Error) {
+          toast.error('No document found');
+          return;
+        }
+        pages = (await pdfToImages(file)).map((x) => ({ id: v4(), history: [x], activeHistory: 0 }));
+        updatedDoc = { ...doc, pages: pages };
         setDocuments((prev) => prev.map((item) => (item.id === updatedDoc.id ? updatedDoc : item)));
         setActiveDocument(updatedDoc);
         if (activePageId === '') {

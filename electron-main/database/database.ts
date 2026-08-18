@@ -9,21 +9,15 @@ export function getDb(): Database.Database {
     if (database) {
         return database;
     }
-
     const dataDir = path.join(app.getPath('userData'), 'data');
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, {
             recursive: true
         });
     }
-
     const dbPath = path.join(dataDir, 'documents.db');
-    console.log(dbPath)
-
     database = new Database(dbPath);
-
     database.pragma('journal_mode = WAL');
     database.pragma('foreign_keys = ON');
-
     return database;
 }

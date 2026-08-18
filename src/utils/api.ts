@@ -1,9 +1,8 @@
-const loadFile = async (path: string) => {
-
-    const buffer = await window.api.documents.getFile(path);
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    const file = new File([blob], path.split('\\').pop() + '.pdf', { type: 'application/pdf' });
-    return file;
+export const loadFile = async (path: string): Promise<File | Error> => {
+    const response = await window.api.documents.getFile(path);
+    if (!response.success) {
+        return Error(response.error);
+    }
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    return new File([blob], path.split('\\').pop() ?? 'document.pdf', { type: 'application/pdf' });
 };
-
-export { loadFile };

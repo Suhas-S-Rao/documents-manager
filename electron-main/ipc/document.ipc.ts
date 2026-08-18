@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { DocumentRepository } from '../repositories/document.repository';
-import fs from 'node:fs';
-import { Document } from '../models/document';
+import fs from 'node:fs/promises';
+import { Document } from '../models';
 
 export function registerDocumentIPC() {
     ipcMain.handle('documents:getAll', () => {
@@ -36,7 +36,11 @@ export function registerDocumentIPC() {
     });
 
     ipcMain.handle('documents:getFile', async (_, filePath: string) => {
-        const buffer = fs.readFileSync(filePath);
-        return buffer;
+        try {
+            const buffer = await fs.readFile(filePath);
+            return { success: true, data: buffer };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
     });
 }

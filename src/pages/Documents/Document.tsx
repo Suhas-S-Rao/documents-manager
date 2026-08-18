@@ -1,6 +1,7 @@
-import { ScanLine, Upload } from 'lucide-react';
+import { Plus, ScanLine, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import DeleteModal from '../../components/modals/DeleteModal';
 import PdfPreview from '../../components/page/PdfPreview';
@@ -16,10 +17,52 @@ const Document = () => {
   const [scannerProperties, setScannerProperties] = useState<ScannerSettings>({ scanner: '', dpi: 300, color: 'color' });
   const [activeDocument, setActiveDocument] = useState<DocumentType>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-
+  const [newDocuments, setNewDocuments] = useState<DocumentType[]>([]);
+  const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     setActiveDocument(documents.find((x) => x.id === activeDocumentId));
   }, [documents, activeDocumentId]);
+
+  useEffect(() => {
+    let newDocs = documents.filter((x) => x.isNew);
+    setNewDocuments(newDocs);
+    if (newDocs.length === 0) {
+      let newId = addNewDoc();
+      setActiveDocumentId(newId);
+    }
+  }, [documents]);
+
+  useEffect(() => {
+    if (location.pathname === '/addDocument') {
+      let newDoc = documents.find((x) => x.isNew);
+      if (newDoc) {
+        setActiveDocumentId(newDoc.id);
+        setActiveDocument(newDoc);
+      }
+    }
+  }, [location.pathname]);
+
+  const addNewDoc = () => {
+    let id = v4();
+    setDocuments((prev) => [
+      ...prev,
+      {
+        id,
+        title: 'New Document ' + (newDocuments.length + 1),
+        document_number: '',
+        document_date: '',
+        notes: '',
+        pages: [],
+        tagIds: [],
+        total_pages: 0,
+        isNew: true,
+        file_path: '',
+        file_size: 0
+      }
+    ]);
+    return id;
+  };
 
   const onFileUpload = async (e: React.DragEvent<HTMLDivElement> | React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -106,13 +149,20 @@ const Document = () => {
       setActiveDocumentId('');
       toast.success(`${activeDocument.title} document deleted successfully`);
       setDeleteModalOpen(false);
+      if (location.pathname !== '/addDocument') {
+        setTimeout(() => {
+          setActiveDocumentId('');
+          setActiveDocument(undefined);
+          navigate('/documents');
+        }, 1000);
+      }
     } catch (error) {
       toast.error('Something went wrong');
     }
   };
 
   const onSave = async () => {
-    if (!activeDocument) {
+    if (!activeDocument || activeDocument.pages.length === 0) {
       return;
     }
     try {
@@ -201,8 +251,34 @@ const Document = () => {
       toast.error('Something went wrong');
     }
   };
+
   return (
-    <div className="flex h-full">
+    <div className="flex flex-col  h-full">
+      {location.pathname === '/addDocument' && (
+        <div key={'add -' + activeDocumentId}>
+          <div className="mb-3 flex items-center border-b border-slate-200 w-full gap-1">
+            <div className="flex flex-1 overflow-x-auto overflow-y-hidden w-0">
+              <div className="flex flex-nowrap gap-1">
+                {newDocuments.map((doc) => {
+                  return (
+                    <button
+                      key={doc.id}
+                      className={`shrink-0 rounded-t-lg border border-b-0 border-slate-200 px-4 py-2 font-medium cursor-pointer max-w-[15rem] truncate ${doc.id === activeDocumentId ? 'bg-calm-surface text-calm-text shadow-soft' : 'bg-calm-background text-slate-500 transition hover:bg-calm-surface hover:text-calm-text'}`}
+                      onClick={() => setActiveDocumentId(doc.id)}
+                      title={doc.title}
+                    >
+                      {doc.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button className="rounded-lg border border-slate-200 bg-calm-surface px-4 py-2 font-medium text-calm-text shadow-soft cursor-pointer h-full" onClick={addNewDoc}>
+              <Plus />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 2xl:grid-cols-[2fr_1fr]">
         <div className="flex min-h-0 flex-col gap-4">
           {activeDocument?.pages?.length === 0 && (
@@ -225,7 +301,7 @@ const Document = () => {
               </Button>
             </div>
           )}
-          {activeDocument?.pages.length === 0 && (
+          {activeDocument?.pages?.length === 0 && (
             <div
               className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-calm-surface p-8 text-center transition hover:border-calm-accent hover:bg-calm-background cursor-pointer m-8"
               onClick={() => document.getElementById('fileInput')?.click()}
@@ -239,7 +315,7 @@ const Document = () => {
               <input id="fileInput" type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => onFileUpload(e)} multiple />
             </div>
           )}
-          <PdfPreview />
+          {activeDocument?.pages?.length !== 0 && <PdfPreview />}
         </div>
         <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-calm-surface shadow-soft justify-between">
           <div>
@@ -285,7 +361,7 @@ const Document = () => {
             </div>
           </div>
           <div className="flex gap-2 pt-3 justify-end p-5 rounded-xl bg-calm-background">
-            <Button className="aspect-square" onClick={onSave}>
+            <Button className="aspect-square" onClick={onSave} disabled={!activeDocument || activeDocument.pages.length === 0}>
               Save
             </Button>
             <Button variant="danger" className="aspect-square" onClick={() => setDeleteModalOpen(true)}>
