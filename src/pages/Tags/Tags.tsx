@@ -10,7 +10,7 @@ import { Tag } from '../../types';
 import { getTextColor } from '../../utils/helpers';
 
 const Tags = () => {
-  const { tags, setTags } = useData();
+  const { tags, setTags, startLoader, stopLoader } = useData();
   const [search, setSearch] = useState<string>('');
 
   const [tagModalOpen, setTagModalOpen] = useState<boolean>(false);
@@ -47,6 +47,7 @@ const Tags = () => {
   const saveTag = async (tag: Tag) => {
     try {
       const isEdit = Boolean(editTag);
+      startLoader('saveTag', `${isEdit ? 'Upadting' : 'Saving'} tag...`);
       const result = isEdit ? await window.api.tags.update(tag) : await window.api.tags.create({ ...tag, id: v4() });
       if (!result.success) {
         toast.error(`Failed to ${isEdit ? 'update' : 'add'} ${tag.name} tag`);
@@ -57,12 +58,15 @@ const Tags = () => {
       closeTagModal();
     } catch (error) {
       toast.error('Something went wrong');
+    } finally {
+      stopLoader('saveTag');
     }
   };
 
   const deleteTag = async () => {
     if (!deleteTagItem) return;
     try {
+      startLoader('deleteTag', `Deleting tag ${deleteTag.name}`);
       const result = await window.api.tags.delete(deleteTagItem.id);
       if (!result.success) {
         toast.error(`Failed to delete ${deleteTagItem.name} tag`);
@@ -73,6 +77,8 @@ const Tags = () => {
       closeDeleteModal();
     } catch {
       toast.error('Something went wrong while deleting tag');
+    } finally {
+      stopLoader('deleteTag');
     }
   };
 

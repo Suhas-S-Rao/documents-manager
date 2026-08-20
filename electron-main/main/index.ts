@@ -1,10 +1,9 @@
+import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
-import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { checkScheduledBackup } from '../services/googleAuth';
-
 import '../database/migrate';
 import { registerIpc } from '../ipc';
+import { setProgressWindow } from '../utils/helpers';
 
 const preloadPath = join(__dirname, '../preload/index.js');
 
@@ -23,7 +22,7 @@ function createWindow(): void {
 
     mainWindow.maximize();
     mainWindow.webContents.openDevTools();
-
+    setProgressWindow(mainWindow);
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
         mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
     } else {
@@ -38,12 +37,6 @@ app.whenReady().then(async () => {
     });
     registerIpc();
     createWindow();
-    try {
-        await checkScheduledBackup();
-    }
-    catch (error) {
-        console.error('Auto backup failed', error);
-    }
     app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();

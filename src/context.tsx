@@ -1,7 +1,7 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import type { Document, Scanner, ScannerProperties, Settings, Tag } from './types';
-import { GoogleDriveSettingsDefault } from './constants';
 import toast from 'react-hot-toast';
+import { GoogleDriveSettingsDefault } from './constants';
+import type { DetectedScanners, Document, Loader, Scanner, Settings, Tag } from './types';
 
 interface DataType {
   documents: Document[];
@@ -9,14 +9,19 @@ interface DataType {
   activeDocumentId: string | null;
   setActiveDocumentId: React.Dispatch<React.SetStateAction<string | null>>;
   scanners: Scanner[];
-  scannersProperties: ScannerProperties[];
-  setScannersProperties: React.Dispatch<React.SetStateAction<ScannerProperties[]>>;
+  setScanners: React.Dispatch<React.SetStateAction<Scanner[]>>;
   newDocuments: Document[];
   setNewDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
   tags: Tag[];
   setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
   settings: Settings;
   setSettings: React.Dispatch<React.SetStateAction<Settings>>;
+  loader: Loader[];
+  startLoader: (id: string, message?: string, progress?: number) => void;
+  stopLoader: (id: string) => void;
+  loadData: () => void;
+  detectedScanners: DetectedScanners[];
+  setDetectedScanners: React.Dispatch<React.SetStateAction<DetectedScanners[]>>;
 }
 
 const DataContext = createContext<DataType | null>(null);
@@ -25,38 +30,96 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [newDocuments, setNewDocuments] = useState<Document[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  const [detectedScanners, setDetectedScanners] = useState<DetectedScanners[]>([]);
   const [scanners, setScanners] = useState<Scanner[]>([]);
-  const [scannersProperties, setScannersProperties] = useState<ScannerProperties[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [settings, setSettings] = useState<Settings>({ scanner: [], google: GoogleDriveSettingsDefault });
+  const [loader, setLoader] = useState<Loader[]>([]);
 
   useEffect(() => {
+    loadData();
+    const listener = (data: Loader) => {
+      updateLoader(data.id, data.message, data.progress);
+    };
+
+    window.api.progress.onUpdate(listener);
+  }, []);
+
+  const loadData = () => {
     getScanners();
     getDocumentsList();
     getTags();
     getGoogleDriveSettings();
-  }, []);
+  };
 
   const getScanners = async () => {
-    setScanners(await window.api.scanner.getScannersList());
-    setScannersProperties(await window.api.scanner.getProperties());
+    try {
+      startLoader('scanner');
+      const scanners = await window.api.scanner.getScannersList();
+      startLoader('scannerProperties');
+      const properties = await window.api.scanner.getProperties();
+      setDetectedScanners(scanners);
+      setScanners(properties);
+    } finally {
+      stopLoader('scanner');
+      stopLoader('scannerProperties');
+    }
   };
 
   const getDocumentsList = async () => {
-    setDocuments(await window.api.documents.getAll());
+    try {
+      startLoader('getDocuments');
+      const docs = await window.api.documents.getAll();
+      setDocuments(docs);
+    } finally {
+      stopLoader('getDocuments');
+    }
   };
 
   const getTags = async () => {
-    setTags(await window.api.tags.getAll());
+    try {
+      startLoader('getTags');
+      const tagsList = await window.api.tags.getAll();
+      setTags(tagsList);
+    } finally {
+      stopLoader('getTags');
+    }
   };
 
   const getGoogleDriveSettings = async () => {
-    let googleSetting = await window.api.googleDrive.getSettings();
-    if (googleSetting.success) {
-      setSettings((prev) => ({ ...prev, google: googleSetting.data }));
-    } else {
-      toast.error(googleSetting.error);
+    try {
+      startLoader('getGoogleSettings');
+      let googleSetting = await window.api.googleDrive.getSettings();
+      if (googleSetting.success) {
+        setSettings((prev) => ({ ...prev, google: googleSetting.data }));
+      } else {
+        toast.error(googleSetting.error);
+      }
+    } finally {
+      stopLoader('getGoogleSettings');
     }
+  };
+
+  const startLoader = (id: string, message?: string, progress?: number) => {
+    queueMicrotask(() => {
+      setLoader((prev) => [...prev.filter((x) => x.id !== id), { id, message, progress }]);
+    });
+  };
+
+  const stopLoader = (id: string) => {
+    setLoader((prev) => prev.filter((x) => x.id !== id));
+  };
+  const updateLoader = (id: string, message?: string, progress?: number) => {
+    queueMicrotask(() => {
+      setLoader((prev) =>
+        prev.map((x) => {
+          if (x.id !== id) {
+            return x;
+          }
+          return { id, message, progress };
+        })
+      );
+    });
   };
 
   return (
@@ -66,15 +129,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setDocuments,
         activeDocumentId,
         setActiveDocumentId,
+        detectedScanners,
+        setDetectedScanners,
         scanners,
-        scannersProperties,
-        setScannersProperties,
+        setScanners,
         newDocuments,
         setNewDocuments,
         tags,
         setTags,
         settings,
-        setSettings
+        setSettings,
+        loader,
+        startLoader,
+        stopLoader,
+        loadData
       }}
     >
       {children}

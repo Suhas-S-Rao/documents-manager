@@ -22,7 +22,7 @@ type Sort = 'A-Z' | 'Z-A' | 'Newest First' | 'Oldest First';
 const defaultFilters: Filters = { search: '', tags: [], fromDate: '', toDate: '', sort: 'A-Z' };
 
 const Documents = () => {
-  const { documents, setDocuments, setActiveDocumentId, tags } = useData();
+  const { documents, setDocuments, setActiveDocumentId, tags, startLoader, stopLoader } = useData();
   const [pagination, setPagination] = useState<{ currentPage: number; totalItems: number; pageSize: PageSize }>({ currentPage: 1, totalItems: 0, pageSize: '10' });
   const [filter, setFilters] = useState<Filters>({ ...defaultFilters });
   const [documentsToDisplay, setDocumentsToDisplay] = useState<DocumentType[]>([]);
@@ -77,6 +77,7 @@ const Documents = () => {
       return;
     }
     try {
+      startLoader('deleteDocument', `Deleting ${deleteDoc.title}... `);
       const result = await window.api.documents.delete(deleteDoc.id);
       if (!result.success) {
         toast.error(`Failed to delete ${deleteDoc.title} document`);
@@ -87,6 +88,27 @@ const Documents = () => {
       setDeleteModalOpen(false);
     } catch (error) {
       toast.error('Something went wrong');
+    } finally {
+      stopLoader('deleteDocument');
+    }
+  };
+
+  const downloadFile = async (doc: DocumentType) => {
+    try {
+      startLoader('getFile', `Fetching ${doc.title} file`);
+      const buffer = await window.api.documents.getFile(doc.file_path);
+
+      const blob = new Blob([buffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${doc.title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      stopLoader('getFile');
     }
   };
 
@@ -197,27 +219,7 @@ const Documents = () => {
                               >
                                 Delete
                               </Button>
-                              <Button
-                                variant="success"
-                                onClick={async () => {
-                                  const buffer = await window.api.documents.getFile(doc.file_path);
-
-                                  const blob = new Blob([buffer], {
-                                    type: 'application/pdf'
-                                  });
-
-                                  const url = URL.createObjectURL(blob);
-
-                                  const a = document.createElement('a');
-                                  a.href = url;
-                                  a.download = `${doc.title}.pdf`;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  a.remove();
-
-                                  URL.revokeObjectURL(url);
-                                }}
-                              >
+                              <Button variant="success" onClick={() => downloadFile(doc)}>
                                 Download
                               </Button>
                             </td>

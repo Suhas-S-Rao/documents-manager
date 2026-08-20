@@ -14,7 +14,7 @@ import { pdfToImages } from '../../utils/pdf/pdfToImage';
 import { fileToDataUrl } from '../../utils/helpers';
 
 const Document = () => {
-  const { documents, setDocuments, activeDocumentId, tags, setActiveDocumentId } = useData();
+  const { documents, setDocuments, activeDocumentId, tags, setActiveDocumentId, startLoader, stopLoader } = useData();
   const [scannerProperties, setScannerProperties] = useState<ScannerSettings>({ scanner: '', dpi: 300, color: 'color' });
   const [activeDocument, setActiveDocument] = useState<DocumentType>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -27,11 +27,13 @@ const Document = () => {
   }, [documents, activeDocumentId]);
 
   useEffect(() => {
-    let newDocs = documents.filter((x) => x.isNew);
-    setNewDocuments(newDocs);
-    if (newDocs.length === 0) {
-      let newId = addNewDoc();
-      setActiveDocumentId(newId);
+    if (location.pathname === '/addDocument') {
+      let newDocs = documents.filter((x) => x.isNew);
+      setNewDocuments(newDocs);
+      if (newDocs.length === 0) {
+        let newId = addNewDoc();
+        setActiveDocumentId(newId);
+      }
     }
   }, [documents]);
 
@@ -67,54 +69,54 @@ const Document = () => {
   };
 
   const onFileUpload = async (e: React.DragEvent<HTMLDivElement> | React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const files = 'dataTransfer' in e ? e.dataTransfer.files : e.target.files;
-    if (!files || files.length === 0) {
-      return;
-    }
-    const fileArray = Array.from(files);
-    const validFiles: File[] = [];
-    const unusedFiles: string[] = [];
-    for (const file of fileArray) {
-      if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-        validFiles.push(file);
-      } else {
-        unusedFiles.push(file.name);
+    try {
+      e.preventDefault();
+      startLoader('fileUpload', 'Uploading file(s)...');
+      const files = 'dataTransfer' in e ? e.dataTransfer.files : e.target.files;
+      if (!files || files.length === 0) {
+        return;
       }
-    }
-    if (validFiles.length === 0) {
-      toast.error(`No valid PDF or image files found. Unused files: ${unusedFiles.join(', ')}`);
-      return;
-    }
-    const pages: Page[] = [];
-    for (const file of validFiles) {
-      if (file.type === 'application/pdf') {
-        const images = await pdfToImagesHistory(file);
-        pages.push(...images);
-      } else if (file.type.startsWith('image/')) {
-        const dataUrl = await fileToDataUrl(file);
-
-        pages.push({
-          id: v4(),
-          history: [dataUrl],
-          activeHistory: 0
-        });
-      }
-    }
-    if (unusedFiles.length > 0) {
-      toast.error(`These files were not used: ${unusedFiles.join(', ')}`);
-    }
-    if (pages.length === 0) {
-      return;
-    }
-    setDocuments((prev) =>
-      prev.map((x) => {
-        if (x.id !== activeDocumentId) {
-          return x;
+      const fileArray = Array.from(files);
+      const validFiles: File[] = [];
+      const unusedFiles: string[] = [];
+      for (const file of fileArray) {
+        if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+          validFiles.push(file);
+        } else {
+          unusedFiles.push(file.name);
         }
-        return { ...x, pages: pages };
-      })
-    );
+      }
+      if (validFiles.length === 0) {
+        toast.error(`No valid PDF or image files found. Unused files: ${unusedFiles.join(', ')}`);
+        return;
+      }
+      const pages: Page[] = [];
+      for (const file of validFiles) {
+        if (file.type === 'application/pdf') {
+          const images = await pdfToImagesHistory(file);
+          pages.push(...images);
+        } else if (file.type.startsWith('image/')) {
+          const dataUrl = await fileToDataUrl(file);
+          pages.push({ id: v4(), history: [dataUrl], activeHistory: 0 });
+        }
+      }
+      if (unusedFiles.length > 0) {
+        toast.error(`These files were not used: ${unusedFiles.join(', ')}`);
+      }
+      if (pages.length === 0) {
+        return;
+      }
+      setDocuments((prev) =>
+        prev.map((x) => {
+          if (x.id !== activeDocumentId) {
+            return x;
+          }
+          return { ...x, pages: pages };
+        })
+      );
+    } finally {
+      stopLoader('fileUpload');
+    }
   };
 
   const pdfToImagesHistory = async (file: File) => {
@@ -138,6 +140,7 @@ const Document = () => {
       return;
     }
     try {
+      startLoader('deleteDocument', 'Deleting document...');
       if (activeDocument.isNew) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== activeDocument.id));
         setActiveDocumentId(documents.find((doc) => doc.id !== activeDocument.id && doc.isNew)?.id ?? '');
@@ -162,6 +165,8 @@ const Document = () => {
       }
     } catch (error) {
       toast.error('Something went wrong');
+    } finally {
+      stopLoader('deleteDocument');
     }
   };
 
@@ -170,6 +175,7 @@ const Document = () => {
       return;
     }
     try {
+      startLoader('saveDocument', `${activeDocument.isNew ? 'Saving' : 'Updating'} ${activeDocument.title}...`);
       if (activeDocument.isNew) {
         const newDoc: DocumentRequest = {
           id: activeDocument.id,
@@ -194,7 +200,7 @@ const Document = () => {
               return doc;
             }
             return {
-              id: result.id,
+              id: result.data.id,
               title: result.data.title,
               document_number: result.data.document_number,
               document_date: result.data.document_date,
@@ -234,7 +240,7 @@ const Document = () => {
               return doc;
             }
             return {
-              id: result.id,
+              id: result.data.id,
               title: result.data.title,
               document_number: result.data.document_number,
               document_date: result.data.document_date,
@@ -253,6 +259,8 @@ const Document = () => {
       }
     } catch (error) {
       toast.error('Something went wrong');
+    } finally {
+      stopLoader('saveDocument');
     }
   };
 
@@ -323,7 +331,7 @@ const Document = () => {
               )}
             </>
           )}
-          {activeDocument?.pages?.length !== 0 && <PdfPreview />}
+          {activeDocument && <PdfPreview />}
         </div>
         <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-calm-surface shadow-soft justify-between">
           <div>

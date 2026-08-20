@@ -10,7 +10,7 @@ import PageThumbnails from './PageThumbnail';
 
 const PdfPreview = () => {
   const [activePageId, setActivePageId] = useState('');
-  const { documents, setDocuments, activeDocumentId } = useData();
+  const { documents, setDocuments, activeDocumentId, startLoader, stopLoader } = useData();
   const [activeDocument, setActiveDocument] = useState<DocumentType>();
   const [activePageData, setActivePageData] = useState<Page>();
 
@@ -22,28 +22,35 @@ const PdfPreview = () => {
       return;
     }
     const loadPdf = async () => {
-      if (doc.file_path && (!doc.pages || doc.pages.length === 0)) {
-        const file = await loadFile(doc.file_path);
-        let updatedDoc: DocumentType;
-        let pages: Page[] = [];
-        if (file instanceof Error) {
-          toast.error('No document found');
+      try {
+        startLoader('loadPages', 'loading file pages');
+        if (doc.file_path && (!doc.pages || doc.pages.length === 0)) {
+          const file = await loadFile(doc.file_path);
+          let updatedDoc: DocumentType;
+          let pages: Page[] = [];
+          if (file instanceof Error) {
+            toast.error('No document found');
+            return;
+          }
+          pages = (await pdfToImages(file)).map((x) => ({ id: v4(), history: [x], activeHistory: 0 }));
+          updatedDoc = { ...doc, pages: pages };
+          setDocuments((prev) => prev.map((item) => (item.id === updatedDoc.id ? updatedDoc : item)));
+          setActiveDocument(updatedDoc);
+          if (activePageId === '') {
+            setActivePageId(pages[0]?.id ?? '');
+          }
           return;
         }
-        pages = (await pdfToImages(file)).map((x) => ({ id: v4(), history: [x], activeHistory: 0 }));
-        updatedDoc = { ...doc, pages: pages };
-        setDocuments((prev) => prev.map((item) => (item.id === updatedDoc.id ? updatedDoc : item)));
-        setActiveDocument(updatedDoc);
-        if (activePageId === '') {
-          setActivePageId(pages[0]?.id ?? '');
-        }
-        return;
+        setActiveDocument(doc);
+        setActivePageId((currentPageId) => {
+          const pageExists = doc.pages?.some((page) => page.id === currentPageId);
+          return pageExists ? currentPageId : (doc.pages?.[0]?.id ?? '');
+        });
+      } finally {
+        setTimeout(() => {
+          stopLoader('loadPages');
+        }, 10);
       }
-      setActiveDocument(doc);
-      setActivePageId((currentPageId) => {
-        const pageExists = doc.pages?.some((page) => page.id === currentPageId);
-        return pageExists ? currentPageId : (doc.pages?.[0]?.id ?? '');
-      });
     };
     loadPdf();
   }, [documents, activeDocumentId]);

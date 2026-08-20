@@ -27,8 +27,8 @@ export function registerGoogleDriveIpc() {
 
     ipcMain.handle('googleDrive:connect', async () => {
         try {
-            await connectGoogleDrive();
-            return { success: true };
+            ;
+            return await connectGoogleDrive();
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -36,8 +36,8 @@ export function registerGoogleDriveIpc() {
 
     ipcMain.handle('googleDrive:backup', async () => {
         try {
-            await backupToGoogleDrive();
-            return { success: true };
+
+            return await backupToGoogleDrive();
         } catch (error) {
             return {
                 success: false,
@@ -48,8 +48,8 @@ export function registerGoogleDriveIpc() {
 
     ipcMain.handle('googleDrive:restore', async () => {
         try {
-            await restoreFromGoogleDrive();
-            return { success: true };
+            ;
+            return await restoreFromGoogleDrive();
         } catch (error) {
             return {
                 success: false,

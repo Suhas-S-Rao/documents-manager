@@ -41,20 +41,13 @@ interface Page {
     activeHistory: number;
 }
 
-interface ScannerProperties {
+interface Scanner {
     id: string;
+    scanner_id: string;
     scanner_name: string;
     dpi: number;
     color_mode: string;
-    paper_size: string;
-    duplex: number;
-    auto_crop: number;
-    auto_rotate: number;
-}
-
-interface Scanner {
-    id: string;
-    scanner_name: string;
+    is_default: boolean;
 }
 
 interface ScannerSettings {
@@ -89,4 +82,16 @@ interface Settings {
     google: GoogleDriveSettings
 }
 
-export type { CreateDocumentRequest, Document, DocumentRequest, DPI, GoogleDriveSettings, Page, PageSize, Scanner, ScannerColor, ScannerProperties, ScannerSettings, Settings, Tag };
+interface Loader {
+    id: string,
+    message?: string,
+    progress?: number
+}
+
+interface DetectedScanners {
+    scanner_id: string,
+    scanner_name: string
+}
+
+export type { CreateDocumentRequest, DetectedScanners, Document, DocumentRequest, DPI, GoogleDriveSettings, Loader, Page, PageSize, Scanner, ScannerColor, ScannerSettings, Settings, Tag };
+

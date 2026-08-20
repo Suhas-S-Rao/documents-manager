@@ -25,4 +25,13 @@ interface GoogleDriveSettings {
     last_backup: string | null
 }
 
-export type { Document, Tag, GoogleDriveSettings }
+interface ScannerSettings {
+    id: string;
+    scanner_id: string;
+    scanner_name: string;
+    dpi: number;
+    color_mode: string;
+    is_default: boolean;
+}
+
+export type { Document, GoogleDriveSettings, ScannerSettings, Tag };

@@ -15,9 +15,9 @@ export class GoogleDriveBackupRepository {
             return {
                 enabled: Boolean(row.enabled),
                 auto_backup: Boolean(row.auto_backup),
-                backup_time: row.backup_time ?? '',
-                folder_id: row.folder_id ?? '',
-                last_backup: row.last_backup ?? ''
+                backup_time: row.backup_time,
+                folder_id: row.folder_id,
+                last_backup: row.last_backup
             };
         }
         return null;
@@ -28,9 +28,9 @@ export class GoogleDriveBackupRepository {
             {
                 enabled: settings.enabled ? 1 : 0,
                 auto_backup: settings.auto_backup ? 1 : 0,
-                backup_time: settings.backup_time ?? '',
-                folder_id: settings.folder_id ?? '',
-                last_backup: settings.last_backup ?? ''
+                backup_time: settings.backup_time,
+                folder_id: settings.folder_id,
+                last_backup: settings.last_backup
             }
         );
     }

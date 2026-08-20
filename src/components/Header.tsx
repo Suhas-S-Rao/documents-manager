@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import { Button } from './ui';
+import { useData } from '../context';
 
 const menus = [
   { name: 'Dashboard', path: '/' },
@@ -9,6 +11,7 @@ const menus = [
 ];
 
 const Header = () => {
+  const { loadData } = useData();
   return (
     <header className="flex h-16 items-center justify-between bg-calm-surface px-6 shadow-soft">
       <div className="text-xl font-bold text-slate-800">Documents Manager</div>
@@ -26,6 +29,9 @@ const Header = () => {
           </NavLink>
         ))}
       </nav>
+      <Button variant="outline" onClick={loadData}>
+        Refresh Data
+      </Button>
     </header>
   );
 };

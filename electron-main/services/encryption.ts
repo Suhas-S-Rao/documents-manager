@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 const algorithm = 'aes-256-gcm';
-const ENCRYPTION_KEY = crypto.createHash('sha256').update('documents-manager-secret-key').digest();
+const ENCRYPTION_KEY = crypto.createHash('sha256').update('mFO2Rn!LXo&I9vhj*e|99z-(D<HV}N6T').digest();
 
 export const encryptFile = async (inputPath: string) => {
     const outputPath = `${inputPath}.enc`;

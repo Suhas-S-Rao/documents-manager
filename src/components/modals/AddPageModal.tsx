@@ -1,14 +1,13 @@
 import { ArrowLeft, Copy, FilePlus, ScanLine, Upload, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
 import { DpiDropdownOptions, ScannerColorDropDown } from '../../constants';
 import { useData } from '../../context';
-import { Page } from '../../types';
-import { DPI, ScannerColor, ScannerSettings } from '../../types';
+import { DPI, Page, ScannerColor, ScannerSettings } from '../../types';
 import { loadFile } from '../../utils/api';
 import { pdfToImages } from '../../utils/pdf/pdfToImage';
 import { Button, Select } from '../ui/index';
-import toast from 'react-hot-toast';
 
 interface Props {
   addPosition: number;
@@ -32,7 +31,7 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
   const [activeDocumentPages, setActiveDocumentPages] = useState<Page[]>([]);
   const [scanning, setScanning] = useState<boolean>(false);
   const [scannerSettings, setScannerSettings] = useState<ScannerSettings>({ scanner: '', color: 'color', dpi: 300 });
-  const { documents, setDocuments, activeDocumentId } = useData();
+  const { documents, setDocuments, activeDocumentId, startLoader, stopLoader } = useData();
 
   const copyOptions: CopyOptions[] = [
     {
@@ -82,6 +81,7 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
 
     const loadPages = async () => {
       try {
+        startLoader('loadPages', 'Loading file pages');
         const doc = documents.find((x) => x.id === selectedDocumentId);
         if (!doc) {
           setActiveDocumentPages([]);
@@ -105,6 +105,10 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
           setActiveDocumentPages([]);
         }
         console.error('Failed to load document pages', error);
+      } finally {
+        setTimeout(() => {
+          stopLoader('loadPages');
+        }, 10);
       }
     };
     loadPages();
@@ -118,47 +122,52 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
   };
 
   const onFileUpload = async (e: React.DragEvent<HTMLDivElement> | React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const files = 'dataTransfer' in e ? e.dataTransfer.files : e.target.files;
-    if (!files || files.length === 0) {
-      return;
-    }
-    const fileArray = Array.from(files);
-    const validFiles: File[] = [];
-    const unusedFiles: string[] = [];
-    for (const file of fileArray) {
-      if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-        validFiles.push(file);
-      } else {
-        unusedFiles.push(file.name);
+    try {
+      e.preventDefault();
+      startLoader('fileUpload', 'Uploading file(s)...');
+      const files = 'dataTransfer' in e ? e.dataTransfer.files : e.target.files;
+      if (!files || files.length === 0) {
+        return;
       }
-    }
-    if (validFiles.length === 0) {
-      toast.error(`No valid PDF or image files found. Unused files: ${unusedFiles.join(', ')}`);
-      return;
-    }
-    const pages: Page[] = [];
-    for (const file of validFiles) {
-      if (file.type === 'application/pdf') {
-        const images = await pdfToImagesHistory(file);
-        pages.push(...images);
-      } else if (file.type.startsWith('image/')) {
-        pages.push({
-          id: v4(),
-          history: [URL.createObjectURL(file)],
-          activeHistory: 0
-        });
+      const fileArray = Array.from(files);
+      const validFiles: File[] = [];
+      const unusedFiles: string[] = [];
+      for (const file of fileArray) {
+        if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+          validFiles.push(file);
+        } else {
+          unusedFiles.push(file.name);
+        }
       }
-    }
-    if (unusedFiles.length > 0) {
-      toast.error(`These files were not used: ${unusedFiles.join(', ')}`);
-    }
-    if (pages.length === 0) {
-      return;
-    }
-    setActiveDocumentPages(pages);
-    if (pages.length === 1) {
-      onPageSelect(pages[0].id);
+      if (validFiles.length === 0) {
+        toast.error(`No valid PDF or image files found. Unused files: ${unusedFiles.join(', ')}`);
+        return;
+      }
+      const pages: Page[] = [];
+      for (const file of validFiles) {
+        if (file.type === 'application/pdf') {
+          const images = await pdfToImagesHistory(file);
+          pages.push(...images);
+        } else if (file.type.startsWith('image/')) {
+          pages.push({
+            id: v4(),
+            history: [URL.createObjectURL(file)],
+            activeHistory: 0
+          });
+        }
+      }
+      if (unusedFiles.length > 0) {
+        toast.error(`These files were not used: ${unusedFiles.join(', ')}`);
+      }
+      if (pages.length === 0) {
+        return;
+      }
+      setActiveDocumentPages(pages);
+      if (pages.length === 1) {
+        onPageSelect(pages[0].id);
+      }
+    } finally {
+      stopLoader('fileUpload');
     }
   };
 
@@ -166,10 +175,7 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
     setDocuments((prev) =>
       prev.map((doc) => {
         if (doc.id === activeDocumentId) {
-          return {
-            ...doc,
-            pages: [...doc.pages.slice(0, addPosition), ...pages, ...doc.pages.slice(addPosition)]
-          };
+          return { ...doc, pages: [...doc.pages.slice(0, addPosition), ...pages, ...doc.pages.slice(addPosition)] };
         }
         return doc;
       })
@@ -316,10 +322,12 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
                   onClick={async () => {
                     setScanning(true);
                     try {
+                      startLoader('scan', 'Scanning page...');
                       const image = await window.api.scanner.scan(null);
                       setActiveDocumentPages((prev) => [...prev, { id: v4(), history: [image], activeHistory: 0 }]);
                     } finally {
                       setScanning(false);
+                      stopLoader('scan');
                     }
                   }}
                 >
