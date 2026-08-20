@@ -24,16 +24,22 @@ export class GoogleDriveBackupRepository {
     }
 
     static updateGoogleDriveSettings(settings: GoogleDriveSettings) {
-        return getDb().prepare(`UPDATE google_drive_backup SET enabled = @enabled, auto_backup = @auto_backup, backup_time = @backup_time, folder_id = @folder_id, last_backup = @last_backup`).run(
-            { ...settings, enabled: settings.enabled ? 1 : 0, auto_backup: settings.auto_backup ? 1 : 0 }
+        return getDb().prepare(`UPDATE google_drive_backup SET enabled = @enabled, auto_backup = @auto_backup, backup_time = @backup_time, folder_id = @folder_id, last_backup = @last_backup WHERE id = 1`).run(
+            {
+                enabled: settings.enabled ? 1 : 0,
+                auto_backup: settings.auto_backup ? 1 : 0,
+                backup_time: settings.backup_time ?? '',
+                folder_id: settings.folder_id ?? '',
+                last_backup: settings.last_backup ?? ''
+            }
         );
     }
 
     static updateLastBackup(date: string) {
-        return getDb().prepare(`UPDATE google_drive_backup SET last_backup = ?`).run(date);
+        return getDb().prepare(`UPDATE google_drive_backup SET last_backup = ? WHERE id = 1`).run(date);
     }
 
     static updateFolderId(folderId: string) {
-        return getDb().prepare(`UPDATE google_drive_backup SET folder_id = ?`).run(folderId);
+        return getDb().prepare(`UPDATE google_drive_backup SET folder_id = ? WHERE id = 1`).run(folderId);
     }
 }

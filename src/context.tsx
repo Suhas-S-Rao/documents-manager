@@ -1,6 +1,7 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import type { Document, Scanner, ScannerProperties, Settings, Tag } from './types';
 import { GoogleDriveSettingsDefault } from './constants';
+import toast from 'react-hot-toast';
 
 interface DataType {
   documents: Document[];
@@ -51,7 +52,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const getGoogleDriveSettings = async () => {
     let googleSetting = await window.api.googleDrive.getSettings();
-    setSettings((prev) => ({ ...prev, google: googleSetting.data }));
+    if (googleSetting.success) {
+      setSettings((prev) => ({ ...prev, google: googleSetting.data }));
+    } else {
+      toast.error(googleSetting.error);
+    }
   };
 
   return (

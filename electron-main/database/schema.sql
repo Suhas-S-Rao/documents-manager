@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS document_tags (
 );
 
 CREATE TABLE IF NOT EXISTS scanner_settings (
-    id TEXT PRIMARY KEY CHECK (id = 1),
+    id TEXT PRIMARY KEY,
     scanner_id TEXT,
     scanner_name TEXT,
     dpi INTEGER DEFAULT 300,
@@ -32,9 +32,23 @@ CREATE TABLE IF NOT EXISTS scanner_settings (
 );
 
 CREATE TABLE IF NOT EXISTS google_drive_backup (
+    id INTEGER PRIMARY KEy CHECK(id = 1),
     enabled INTEGER DEFAULT 0,
     auto_backup INTEGER DEFAULT 0,
     backup_time TEXT,
     folder_id TEXT,
     last_backup TEXT
+);
+
+INSERT INTO google_drive_backup (
+    id,
+    enabled,
+    auto_backup,
+    backup_time,
+    folder_id,
+    last_backup
+)
+SELECT 1, 1, 1, '', '', ''
+WHERE NOT EXISTS (
+    SELECT 1 FROM google_drive_backup
 );

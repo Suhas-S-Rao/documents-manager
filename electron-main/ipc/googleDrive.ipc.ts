@@ -1,12 +1,16 @@
 import { ipcMain } from 'electron';
 import { GoogleDriveBackupRepository } from '../repositories/googleDriveBackup.repository';
-import { connectGoogleDrive } from '../services/googleAuth';
+import { connectGoogleDrive, restoreFromGoogleDrive } from '../services/googleAuth';
 import { backupToGoogleDrive } from '../services/googleAuth';
 
 export function registerGoogleDriveIpc() {
     ipcMain.handle('googleDrive:getSettings', () => {
         try {
-            return { success: true, data: GoogleDriveBackupRepository.getGoogleDriveSettings() };
+            const result = GoogleDriveBackupRepository.getGoogleDriveSettings();
+            if (result) {
+                return { success: true, data: result };
+            }
+            return { success: false, error: "No Data" };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -33,6 +37,18 @@ export function registerGoogleDriveIpc() {
     ipcMain.handle('googleDrive:backup', async () => {
         try {
             await backupToGoogleDrive();
+            return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+            };
+        }
+    });
+
+    ipcMain.handle('googleDrive:restore', async () => {
+        try {
+            await restoreFromGoogleDrive();
             return { success: true };
         } catch (error) {
             return {

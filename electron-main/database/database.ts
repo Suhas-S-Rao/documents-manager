@@ -21,3 +21,10 @@ export function getDb(): Database.Database {
     database.pragma('foreign_keys = ON');
     return database;
 }
+
+export function closeDb() {
+    if (database) {
+        database.close();
+        database = null;
+    }
+}

@@ -1,9 +1,14 @@
 import { authenticate } from '@google-cloud/local-auth';
 import { app } from 'electron';
+import extract from 'extract-zip';
 import { google } from 'googleapis';
 import fs from 'node:fs';
 import path from 'node:path';
+import { closeDb } from '../database/database';
 import { GoogleDriveBackupRepository } from '../repositories/googleDriveBackup.repository';
+import { cleanupBackup, createZip, prepareBackup } from './backupArchive';
+import { decryptFile, encryptFile } from './encryption';
+import Database from 'better-sqlite3';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const credentialsPath = path.join(app.getPath('userData'), 'credentials.json');
@@ -68,19 +73,23 @@ export const backupToGoogleDrive = async () => {
     if (!settings) {
         throw new Error('Google Drive settings not found');
     }
-    console.log(settings)
-    if (!settings?.folder_id) {
-        throw new Error('Backup folder not configured');
+    const folderId = await getValidBackupFolderId();
+    let backupFolder = '';
+    let zipFile = '';
+    let encryptedFile = '';
+
+    try {
+        backupFolder = await prepareBackup();
+        zipFile = await createZip(backupFolder);
+        encryptedFile = await encryptFile(zipFile);
+        await deleteAllBackupFiles(folderId);
+        await uploadFile(encryptedFile, 'DocumentsManagerBackup.enc', folderId);
+        GoogleDriveBackupRepository.updateLastBackup(new Date().toISOString());
+    } catch (error) {
+        console.log(error);
+    } finally {
+        cleanupBackup([backupFolder, zipFile, encryptedFile]);
     }
-    await deleteAllBackupFiles(settings.folder_id);
-    const dbPath = path.join(app.getPath('userData'), 'data', 'documents.db');
-    if (!fs.existsSync(dbPath)) {
-        throw new Error('Database file not found');
-    }
-    await uploadFile(dbPath, 'documents.db', settings.folder_id);
-    const documentsPath = path.join(app.getPath('userData'), 'documents');
-    await uploadDirectory(documentsPath, settings.folder_id);
-    GoogleDriveBackupRepository.updateLastBackup(new Date().toISOString());
 };
 
 export const checkScheduledBackup = async () => {
@@ -127,23 +136,6 @@ const uploadFile = async (filePath: string, fileName: string, folderId?: string)
     return result.data.id;
 };
 
-const uploadDirectory = async (directoryPath: string, folderId?: string) => {
-
-    if (!fs.existsSync(directoryPath)) {
-        return;
-    }
-    const files = fs.readdirSync(directoryPath, { withFileTypes: true });
-
-    for (const file of files) {
-        const fullPath = path.join(directoryPath, file.name);
-        if (file.isDirectory()) {
-            await uploadDirectory(fullPath, folderId);
-        } else {
-            await uploadFile(fullPath, file.name, folderId);
-        }
-    }
-};
-
 const deleteAllBackupFiles = async (folderId: string) => {
     const drive = getDriveClient();
     let pageToken: string | undefined = undefined;
@@ -171,17 +163,102 @@ const getOrCreateBackupFolder = async () => {
         fields: 'files(id,name)'
     });
     const folders = response.data.files ?? [];
-
+    let folderId: string | null = null;
     if (folders.length > 0) {
-        return folders[0].id;
+        folderId = folders[0].id ?? null;
+    } else {
+        const folder = await drive.files.create({
+            requestBody: {
+                name: 'Documents Manager Backup',
+                mimeType: 'application/vnd.google-apps.folder'
+            },
+            fields: 'id'
+        });
+        folderId = folder.data.id ?? null;
     }
-    const folder = await drive.files.create({
-        requestBody: {
-            name: 'Documents Manager Backup',
-            mimeType: 'application/vnd.google-apps.folder'
-        },
-        fields: 'id'
+
+    if (!folderId) {
+        throw new Error('Unable to create Google Drive backup folder');
+    }
+    return folderId;
+};
+
+const getValidBackupFolderId = async () => {
+    const settings = GoogleDriveBackupRepository.getGoogleDriveSettings();
+    if (!settings) {
+        throw new Error('Google Drive settings not found');
+    }
+    const drive = getDriveClient();
+    try {
+        await drive.files.get({ fileId: settings.folder_id!, fields: 'id' });
+        return settings.folder_id!;
+    } catch {
+        const folderId = await getOrCreateBackupFolder();
+        GoogleDriveBackupRepository.updateFolderId(folderId);
+        return folderId;
+    }
+};
+
+export const restoreFromGoogleDrive = async () => {
+    await loadGoogleDriveAuth();
+    const settings = GoogleDriveBackupRepository.getGoogleDriveSettings();
+    if (!settings) {
+        throw new Error('Google Drive settings not found');
+    }
+    const folderId = await getValidBackupFolderId();
+    const drive = getDriveClient();
+    const response = await drive.files.list({
+        q: `'${folderId}' in parents and name='DocumentsManagerBackup.enc' and trashed=false`,
+        fields: 'files(id,name)'
     });
 
-    return folder.data.id;
+    const backupFile = response.data.files?.[0];
+    if (!backupFile?.id) {
+        throw new Error('Backup file not found');
+    }
+
+    const encryptedPath = path.join(process.env.TEMP!, 'DocumentsManagerBackup.enc');
+    const zipPath = path.join(process.env.TEMP!, 'DocumentsManagerBackup.zip');
+    const writer = fs.createWriteStream(encryptedPath);
+    const download = await drive.files.get({ fileId: backupFile.id, alt: 'media' }, { responseType: 'stream' });
+
+    await new Promise<void>((resolve, reject) => {
+        download.data.pipe(writer).on('finish', () => resolve()).on('error', reject);
+    });
+
+    try {
+        await decryptFile(encryptedPath, zipPath);
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+        closeDb();
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const dataPath = path.join(app.getPath('userData'), 'data');
+        const dbPath = path.join(dataPath, 'documents.db');
+        if (fs.existsSync(dbPath)) {
+            fs.rmSync(dbPath, { force: true });
+        }
+        if (fs.existsSync(`${dbPath}-wal`)) {
+            fs.rmSync(`${dbPath}-wal`, { force: true });
+        }
+
+        if (fs.existsSync(`${dbPath}-shm`)) {
+            fs.rmSync(`${dbPath}-shm`, { force: true });
+        }
+
+        fs.mkdirSync(dataPath, { recursive: true });
+        const documentsPath = path.join(app.getPath('userData'), 'documents');
+
+        if (fs.existsSync(documentsPath)) {
+            fs.rmSync(documentsPath, { recursive: true, force: true });
+        }
+        await extract(zipPath, { dir: app.getPath('userData') });
+        const db = new Database(path.join(app.getPath('userData'), 'data', 'documents.db'));
+        db.close();
+    } catch (error) {
+        console.error('Google Drive restore failed', error);
+        throw error;
+    } finally {
+        cleanupBackup([encryptedPath, zipPath]);
+    }
 };

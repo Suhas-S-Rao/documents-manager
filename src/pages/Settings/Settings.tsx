@@ -51,7 +51,7 @@ const Settings = () => {
   };
 
   const saveGoogleDriveSettings = async () => {
-    const result = await window.api.googleDrive.updateSettings(settings);
+    const result = await window.api.googleDrive.updateSettings(settings.google);
     if (result.success) {
       toast.success('Google Drive settings saved');
     } else {
@@ -167,7 +167,6 @@ const Settings = () => {
                   <Button
                     onClick={async () => {
                       const result = await window.api.googleDrive.backup();
-
                       if (result.success) {
                         toast.success('Backup completed successfully');
                       } else {
@@ -176,6 +175,19 @@ const Settings = () => {
                     }}
                   >
                     Backup Now
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      const result = await window.api.googleDrive.restore();
+                      if (result.success) {
+                        toast.success('Restore completed successfully');
+                        window.location.reload();
+                      } else {
+                        toast.error(result.error);
+                      }
+                    }}
+                  >
+                    Restore
                   </Button>
                 </div>
                 {settings.google.last_backup && <p className="text-sm text-slate-500">Last Backup: {new Date(settings.google.last_backup).toLocaleString()}</p>}

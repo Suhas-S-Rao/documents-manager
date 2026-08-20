@@ -26,7 +26,8 @@ const api = {
         getSettings: () => ipcRenderer.invoke('googleDrive:getSettings'),
         updateSettings: (settings: unknown) => ipcRenderer.invoke('googleDrive:updateSettings', settings),
         connect: () => ipcRenderer.invoke('googleDrive:connect'),
-        backup: () => ipcRenderer.invoke('googleDrive:backup')
+        backup: () => ipcRenderer.invoke('googleDrive:backup'),
+        restore: () => ipcRenderer.invoke('googleDrive:restore')
     }
 };
 

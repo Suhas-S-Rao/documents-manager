@@ -11,6 +11,7 @@ import { useData } from '../../context';
 import type { DocumentRequest, Document as DocumentType, DPI, Page, ScannerColor, ScannerSettings } from '../../types';
 import { imagesToPdf } from '../../utils/pdf/imagesToPdf';
 import { pdfToImages } from '../../utils/pdf/pdfToImage';
+import { fileToDataUrl } from '../../utils/helpers';
 
 const Document = () => {
   const { documents, setDocuments, activeDocumentId, tags, setActiveDocumentId } = useData();
@@ -20,6 +21,7 @@ const Document = () => {
   const [newDocuments, setNewDocuments] = useState<DocumentType[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
+
   useEffect(() => {
     setActiveDocument(documents.find((x) => x.id === activeDocumentId));
   }, [documents, activeDocumentId]);
@@ -90,9 +92,11 @@ const Document = () => {
         const images = await pdfToImagesHistory(file);
         pages.push(...images);
       } else if (file.type.startsWith('image/')) {
+        const dataUrl = await fileToDataUrl(file);
+
         pages.push({
           id: v4(),
-          history: [URL.createObjectURL(file)],
+          history: [dataUrl],
           activeHistory: 0
         });
       }
@@ -281,39 +285,43 @@ const Document = () => {
       )}
       <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 2xl:grid-cols-[2fr_1fr]">
         <div className="flex min-h-0 flex-col gap-4">
-          {activeDocument?.pages?.length === 0 && (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <Select label="Scanner" value={scannerProperties.scanner} onChange={(value) => setScannerProperties((prev) => ({ ...prev, scanner: value as string }))} options={scanners} />
-              <Select
-                label="Resolution"
-                value={scannerProperties.dpi.toString()}
-                onChange={(value) => setScannerProperties((prev) => ({ ...prev, dpi: Number(value as string) as DPI }))}
-                options={DpiDropdownOptions}
-              />
-              <Select
-                label="Color mode"
-                value={scannerProperties.color}
-                onChange={(value) => setScannerProperties((prev) => ({ ...prev, color: value as ScannerColor }))}
-                options={ScannerColorDropDown}
-              />
-              <Button className="flex gap-3">
-                <ScanLine /> Scan
-              </Button>
-            </div>
-          )}
-          {activeDocument?.pages?.length === 0 && (
-            <div
-              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-calm-surface p-8 text-center transition hover:border-calm-accent hover:bg-calm-background cursor-pointer m-8"
-              onClick={() => document.getElementById('fileInput')?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => onFileUpload(e)}
-            >
-              <Upload className="h-10 w-10 text-slate-400" />
-              <p className="mt-2 text-sm font-medium text-calm-text">Drag and drop your file here</p>
-              <p className="text-xs text-slate-500">or click to select a file from your device</p>
-              <p className="mt-2 text-xs font-medium text-calm-accent">Upload a single PDF file or multiple image files (JPG, PNG)</p>
-              <input id="fileInput" type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => onFileUpload(e)} multiple />
-            </div>
+          {location.pathname === '/addDocument' && (
+            <>
+              {activeDocument?.pages?.length === 0 && (
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <Select label="Scanner" value={scannerProperties.scanner} onChange={(value) => setScannerProperties((prev) => ({ ...prev, scanner: value as string }))} options={scanners} />
+                  <Select
+                    label="Resolution"
+                    value={scannerProperties.dpi.toString()}
+                    onChange={(value) => setScannerProperties((prev) => ({ ...prev, dpi: Number(value as string) as DPI }))}
+                    options={DpiDropdownOptions}
+                  />
+                  <Select
+                    label="Color mode"
+                    value={scannerProperties.color}
+                    onChange={(value) => setScannerProperties((prev) => ({ ...prev, color: value as ScannerColor }))}
+                    options={ScannerColorDropDown}
+                  />
+                  <Button className="flex gap-3">
+                    <ScanLine /> Scan
+                  </Button>
+                </div>
+              )}
+              {activeDocument?.pages?.length === 0 && (
+                <div
+                  className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-calm-surface p-8 text-center transition hover:border-calm-accent hover:bg-calm-background cursor-pointer m-8"
+                  onClick={() => document.getElementById('fileInput')?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => onFileUpload(e)}
+                >
+                  <Upload className="h-10 w-10 text-slate-400" />
+                  <p className="mt-2 text-sm font-medium text-calm-text">Drag and drop your file here</p>
+                  <p className="text-xs text-slate-500">or click to select a file from your device</p>
+                  <p className="mt-2 text-xs font-medium text-calm-accent">Upload a single PDF file or multiple image files (JPG, PNG)</p>
+                  <input id="fileInput" type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => onFileUpload(e)} multiple />
+                </div>
+              )}
+            </>
           )}
           {activeDocument?.pages?.length !== 0 && <PdfPreview />}
         </div>
@@ -361,7 +369,7 @@ const Document = () => {
             </div>
           </div>
           <div className="flex gap-2 pt-3 justify-end p-5 rounded-xl bg-calm-background">
-            <Button className="aspect-square" onClick={onSave} disabled={!activeDocument || activeDocument.pages.length === 0}>
+            <Button className="aspect-square" onClick={onSave} disabled={!activeDocument || activeDocument.pages?.length === 0}>
               Save
             </Button>
             <Button variant="danger" className="aspect-square" onClick={() => setDeleteModalOpen(true)}>
