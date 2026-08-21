@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.documentsmanager.app
 productName: documents-manager
 directories:
   buildResources: build
@@ -13,6 +13,7 @@ asarUnpack:
   - resources/**
 win:
   executableName: documents-manager
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

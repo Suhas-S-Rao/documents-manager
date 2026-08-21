@@ -2,11 +2,11 @@ import { Route, Routes } from 'react-router-dom';
 import Header from './components/Header';
 import AppLoader from './components/ui/AppLoader';
 import { useData } from './context';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Document from './pages/Documents/Document';
-import Documents from './pages/Documents/Documents';
-import Settings from './pages/Settings/Settings';
-import Tags from './pages/Tags/Tags';
+import Dashboard from './pages/Dashboard';
+import Document from './pages/Document';
+import Documents from './pages/Documents';
+import Settings from './pages/Settings';
+import Tags from './pages/Tags';
 
 const App = () => {
   const { loader } = useData();

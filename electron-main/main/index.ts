@@ -1,12 +1,11 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow } from 'electron';
-import { join } from 'node:path';
+import path, { join } from 'node:path';
 import '../database/migrate';
-import { registerIpc } from '../ipc';
 import { setProgressWindow } from '../helpers';
+import { registerIpc } from '../ipc';
 
 const preloadPath = join(__dirname, '../preload/index.js');
-
 
 function createWindow(): void {
     const mainWindow = new BrowserWindow({
@@ -14,14 +13,18 @@ function createWindow(): void {
         height: 800,
         show: true,
         autoHideMenuBar: true,
+        icon: path.join(process.env.APP_ROOT!, 'build/icon.ico'),
+        title: 'Document Manager',
+
         webPreferences: {
             preload: preloadPath,
-            sandbox: false
+            sandbox: false,
+            contextIsolation: true,
+            nodeIntegration: false,
         }
     });
 
     mainWindow.maximize();
-    mainWindow.webContents.openDevTools();
     setProgressWindow(mainWindow);
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
         mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
