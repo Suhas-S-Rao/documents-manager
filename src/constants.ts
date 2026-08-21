@@ -19,11 +19,7 @@ const ScannerColorDropDownOptions = [
     { label: "Grayscale", value: "gray" },
     { label: "Black & White", value: "bw" }
 ]
-const scanners = [
-    { label: 'Epson DS-530', value: 'epson' },
-    { label: 'HP ScanJet Pro 2500', value: 'hp2500' },
-    { label: 'Brother ADS-2200', value: 'brother2200' }
-]
+
 const pageSizeDropdownOptions = [
     { label: '5', value: '5' },
     { label: '10', value: '10' },
@@ -48,4 +44,4 @@ const GoogleDriveSettingsDefault: GoogleDriveSettings = {
     last_backup: ''
 }
 
-export { DpiDropdownOptions, pageSizeDropdownOptions, ScannerColorDropDownOptions as ScannerColorDropDown, scanners, SortDropDownOptions, GoogleDriveSettingsDefault };
+export { DpiDropdownOptions, pageSizeDropdownOptions, ScannerColorDropDownOptions as ScannerColorDropDown, SortDropDownOptions, GoogleDriveSettingsDefault };

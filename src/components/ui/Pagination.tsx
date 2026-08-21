@@ -1,6 +1,6 @@
-import { PageSize } from '../../types';
 import { pageSizeDropdownOptions } from '../../constants';
-import { Select } from './index';
+import { PageSize } from '../../types';
+import { Select } from './';
 
 interface PaginationProps {
   currentPage: number;

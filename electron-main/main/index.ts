@@ -3,7 +3,7 @@ import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import '../database/migrate';
 import { registerIpc } from '../ipc';
-import { setProgressWindow } from '../utils/helpers';
+import { setProgressWindow } from '../helpers';
 
 const preloadPath = join(__dirname, '../preload/index.js');
 

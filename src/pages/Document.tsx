@@ -1,30 +1,42 @@
 import { Plus, ScanLine, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
-import DeleteModal from '../../components/modals/DeleteModal';
-import PdfPreview from '../../components/page/PdfPreview';
-import { Button, DatePicker, Input, Select, Textarea } from '../../components/ui/index';
-import { DpiDropdownOptions, ScannerColorDropDown, scanners } from '../../constants';
-import { useData } from '../../context';
-import type { DocumentRequest, Document as DocumentType, DPI, Page, ScannerColor, ScannerSettings } from '../../types';
-import { imagesToPdf } from '../../utils/pdf/imagesToPdf';
-import { pdfToImages } from '../../utils/pdf/pdfToImage';
-import { fileToDataUrl } from '../../utils/helpers';
+import DeleteModal from '../components/modals/DeleteModal';
+import PdfPreview from '../components/PdfPreview';
+import { Button, DatePicker, Input, Select, Textarea } from '../components/ui';
+import { DpiDropdownOptions, ScannerColorDropDown } from '../constants';
+import { useData } from '../context';
+import type { DocumentRequest, Document as DocumentType, DPI, Page, Scanner, ScannerColor } from '../types';
+import { loadImage } from '../utils/api';
+import { fileToDataUrl } from '../utils/helpers';
+import { imagesToPdf } from '../utils/pdf/imagesToPdf';
+import { pdfToImages } from '../utils/pdf/pdfToImage';
 
 const Document = () => {
-  const { documents, setDocuments, activeDocumentId, tags, setActiveDocumentId, startLoader, stopLoader } = useData();
-  const [scannerProperties, setScannerProperties] = useState<ScannerSettings>({ scanner: '', dpi: 300, color: 'color' });
+  const { documents, setDocuments, activeDocumentId, tags, setActiveDocumentId, startLoader, stopLoader, scanners, detectedScanners } = useData();
   const [activeDocument, setActiveDocument] = useState<DocumentType>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [newDocuments, setNewDocuments] = useState<DocumentType[]>([]);
+  const [selectedScanner, setSelectedScanner] = useState<Scanner>();
+  const scannersDropdown = useMemo(() => {
+    const detectedScannerIds = new Set(detectedScanners.map((x) => x.scanner_id));
+    return scanners.filter((x) => detectedScannerIds.has(x.scanner_id)).map((x) => ({ label: x.scanner_name, value: x.scanner_id }));
+  }, [scanners, detectedScanners]);
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     setActiveDocument(documents.find((x) => x.id === activeDocumentId));
   }, [documents, activeDocumentId]);
+
+  useEffect(() => {
+    const defaultScanner = scanners.find((x) => x.is_default);
+    if (defaultScanner) {
+      setSelectedScanner(defaultScanner);
+    }
+  }, [scanners]);
 
   useEffect(() => {
     if (location.pathname === '/addDocument') {
@@ -264,6 +276,38 @@ const Document = () => {
     }
   };
 
+  const onScanClick = async () => {
+    if (!selectedScanner) {
+      return;
+    }
+    try {
+      startLoader('scan', 'Scanning page...');
+      const result = await window.api.scanner.scan(selectedScanner);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      let page: Page;
+
+      const image = await loadImage(result.data);
+      if (image instanceof Error) {
+        toast.error('Error in scanning');
+      } else {
+        page = { id: v4(), history: [await fileToDataUrl(image)], activeHistory: 0 };
+      }
+      setDocuments((prev) =>
+        prev.map((x) => {
+          if (x.id !== activeDocumentId) {
+            return x;
+          }
+          return { ...x, pages: [page] };
+        })
+      );
+    } finally {
+      stopLoader('scan');
+    }
+  };
+
   return (
     <div className="flex flex-col  h-full">
       {location.pathname === '/addDocument' && (
@@ -297,21 +341,26 @@ const Document = () => {
             <>
               {activeDocument?.pages?.length === 0 && (
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                  <Select label="Scanner" value={scannerProperties.scanner} onChange={(value) => setScannerProperties((prev) => ({ ...prev, scanner: value as string }))} options={scanners} />
+                  <Select
+                    label="Scanner"
+                    value={selectedScanner?.scanner_id ?? ''}
+                    onChange={(value) => setSelectedScanner(scanners.find((x) => x.scanner_id === (value as string)))}
+                    options={scannersDropdown}
+                  />
                   <Select
                     label="Resolution"
-                    value={scannerProperties.dpi.toString()}
-                    onChange={(value) => setScannerProperties((prev) => ({ ...prev, dpi: Number(value as string) as DPI }))}
-                    options={DpiDropdownOptions}
+                    value={selectedScanner?.dpi.toString() ?? ''}
+                    onChange={(value) => setSelectedScanner((prev) => (prev ? { ...prev, dpi: Number(value) as DPI } : prev))}
+                    options={DpiDropdownOptions.filter((x) => Number(x.value) <= (selectedScanner?.max_dpi ?? 4800))}
                   />
                   <Select
                     label="Color mode"
-                    value={scannerProperties.color}
-                    onChange={(value) => setScannerProperties((prev) => ({ ...prev, color: value as ScannerColor }))}
+                    value={selectedScanner?.color_mode ?? ''}
+                    onChange={(value) => setSelectedScanner((prev) => (prev ? { ...prev, color_mode: value as ScannerColor } : prev))}
                     options={ScannerColorDropDown}
                   />
-                  <Button className="flex gap-3">
-                    <ScanLine /> Scan
+                  <Button className="flex gap-3" onClick={onScanClick}>
+                    <ScanLine /> Scan Page
                   </Button>
                 </div>
               )}

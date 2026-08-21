@@ -1,13 +1,14 @@
 import { ArrowLeft, Copy, FilePlus, ScanLine, Upload, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
 import { DpiDropdownOptions, ScannerColorDropDown } from '../../constants';
 import { useData } from '../../context';
-import { DPI, Page, ScannerColor, ScannerSettings } from '../../types';
-import { loadFile } from '../../utils/api';
+import { DPI, Page, Scanner, ScannerColor } from '../../types';
+import { loadFile, loadImage } from '../../utils/api';
+import { fileToDataUrl } from '../../utils/helpers';
 import { pdfToImages } from '../../utils/pdf/pdfToImage';
-import { Button, Select } from '../ui/index';
+import { Button, Select } from '../ui';
 
 interface Props {
   addPosition: number;
@@ -25,13 +26,17 @@ interface CopyOptions {
 type SourceTypes = 'same' | 'document' | 'upload' | 'scan' | null;
 
 const AddPageModal = ({ open, onClose, addPosition }: Props) => {
+  const { documents, setDocuments, activeDocumentId, startLoader, stopLoader, scanners, detectedScanners } = useData();
   const [source, setSource] = useState<'same' | 'document' | 'upload' | 'scan' | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [activeDocumentPages, setActiveDocumentPages] = useState<Page[]>([]);
   const [scanning, setScanning] = useState<boolean>(false);
-  const [scannerSettings, setScannerSettings] = useState<ScannerSettings>({ scanner: '', color: 'color', dpi: 300 });
-  const { documents, setDocuments, activeDocumentId, startLoader, stopLoader } = useData();
+  const [selectedScanner, setSelectedScanner] = useState<Scanner>();
+  const scannersDropdown = useMemo(() => {
+    const detectedScannerIds = new Set(detectedScanners.map((x) => x.scanner_id));
+    return scanners.filter((x) => detectedScannerIds.has(x.scanner_id)).map((x) => ({ label: x.scanner_name, value: x.scanner_id }));
+  }, [scanners, detectedScanners]);
 
   const copyOptions: CopyOptions[] = [
     {
@@ -149,11 +154,7 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
           const images = await pdfToImagesHistory(file);
           pages.push(...images);
         } else if (file.type.startsWith('image/')) {
-          pages.push({
-            id: v4(),
-            history: [URL.createObjectURL(file)],
-            activeHistory: 0
-          });
+          pages.push({ id: v4(), history: [URL.createObjectURL(file)], activeHistory: 0 });
         }
       }
       if (unusedFiles.length > 0) {
@@ -180,6 +181,34 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
         return doc;
       })
     );
+  };
+
+  const onScanClick = async () => {
+    if (!selectedScanner) {
+      return;
+    }
+    setScanning(true);
+    try {
+      startLoader('scan', 'Scanning page...');
+      const result = await window.api.scanner.scan(selectedScanner);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      let page: Page;
+
+      const image = await loadImage(result.data);
+      if (image instanceof Error) {
+        toast.error('Error in scanning');
+      } else {
+        page = { id: v4(), history: [await fileToDataUrl(image)], activeHistory: 0 };
+        onPageSelect(page.id);
+        setActiveDocumentPages((prev) => [...prev, page]);
+      }
+    } finally {
+      setScanning(false);
+      stopLoader('scan');
+    }
   };
 
   if (!open) return null;
@@ -293,47 +322,32 @@ const AddPageModal = ({ open, onClose, addPosition }: Props) => {
               </>
             )}
             {source === 'scan' && (
-              <div className="space-y-4 m-2">
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-sm font-medium text-calm-text">Scanner Settings</p>
-
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <Select
-                      label="Scanner"
-                      value={scannerSettings.scanner}
-                      onChange={(v) => setScannerSettings((prev) => ({ ...prev, scanner: v as string }))}
-                      options={[
-                        { label: 'Epson DS-530', value: 'epson' },
-                        { label: 'HP ScanJet Pro 2500', value: 'hp2500' },
-                        { label: 'Brother ADS-2200', value: 'brother2200' }
-                      ]}
-                    />
-                    <Select label="Color Mode" value={scannerSettings.color} options={ScannerColorDropDown} onChange={(v) => setScannerSettings((prev) => ({ ...prev, color: v as ScannerColor }))} />
-                    <Select
-                      label="Resolution"
-                      value={scannerSettings.dpi.toString()}
-                      options={DpiDropdownOptions}
-                      onChange={(v) => setScannerSettings((prev) => ({ ...prev, dpi: Number(v) as DPI }))}
-                    />
-                  </div>
+              <>
+                <ArrowLeft className="mx-3 mt-3 cursor-pointer" onClick={() => resetModal()} />
+                <div className="grid grid-cols-2 gap-4 p-4">
+                  <Select
+                    label="Scanner"
+                    value={selectedScanner?.scanner_id ?? ''}
+                    onChange={(value) => setSelectedScanner(scanners.find((x) => x.scanner_id === (value as string)))}
+                    options={scannersDropdown}
+                  />
+                  <Select
+                    label="Resolution"
+                    value={selectedScanner?.dpi.toString() ?? ''}
+                    onChange={(value) => setSelectedScanner((prev) => (prev ? { ...prev, dpi: Number(value) as DPI } : prev))}
+                    options={DpiDropdownOptions.filter((x) => Number(x.value) <= (selectedScanner?.max_dpi ?? 4800))}
+                  />
+                  <Select
+                    label="Color mode"
+                    value={selectedScanner?.color_mode ?? ''}
+                    onChange={(value) => setSelectedScanner((prev) => (prev ? { ...prev, color_mode: value as ScannerColor } : prev))}
+                    options={ScannerColorDropDown}
+                  />
+                  <Button className="flex gap-3" disabled={scanning} onClick={onScanClick}>
+                    <ScanLine /> {scanning ? 'Scanning...' : 'Scan Page'}
+                  </Button>
                 </div>
-                <Button
-                  disabled={scanning}
-                  onClick={async () => {
-                    setScanning(true);
-                    try {
-                      startLoader('scan', 'Scanning page...');
-                      const image = await window.api.scanner.scan(null);
-                      setActiveDocumentPages((prev) => [...prev, { id: v4(), history: [image], activeHistory: 0 }]);
-                    } finally {
-                      setScanning(false);
-                      stopLoader('scan');
-                    }
-                  }}
-                >
-                  {scanning ? 'Scanning...' : 'Scan Page'}
-                </Button>
-              </div>
+              </>
             )}
           </>
         )}

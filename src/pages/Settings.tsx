@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
-import { Button, Input, Select, TimePicker } from '../../components/ui';
-import { DpiDropdownOptions, ScannerColorDropDown } from '../../constants';
-import { useData } from '../../context';
-import { DPI, Scanner, ScannerColor } from '../../types';
+import { Button, Input, Select, TimePicker } from '../components/ui';
+import { DpiDropdownOptions, ScannerColorDropDown } from '../constants';
+import { useData } from '../context';
+import { DPI, Scanner, ScannerColor } from '../types';
 
 const Settings = () => {
   const menus = ['Scanner', 'Google Drive'];
@@ -14,29 +14,26 @@ const Settings = () => {
   const [selectedScanner, setSelectedScanner] = useState<Scanner>();
 
   useEffect(() => {
-    const scannerSel = scanners.find((x) => x.scanner_id === selectedScannerId);
-    if (scannerSel) {
-      setSelectedScanner(scannerSel);
-      return;
-    }
-    const detected = detectedScanners.find((x) => x.scanner_id === selectedScannerId);
-    if (detected) {
-      setSelectedScanner({
-        id: v4(),
-        scanner_id: detected.scanner_id,
-        scanner_name: detected.scanner_name,
-        dpi: 300,
-        color_mode: 'color',
-        is_default: false
-      });
+    if (selectedScannerId !== '') {
+      const scannerSel = scanners.find((x) => x.scanner_id === selectedScannerId);
+      if (scannerSel) {
+        setSelectedScanner(scannerSel);
+        return;
+      }
+      const detected = detectedScanners.find((x) => x.scanner_id === selectedScannerId);
+      if (detected) {
+        setSelectedScanner({
+          id: v4(),
+          scanner_id: detected.scanner_id,
+          scanner_name: detected.scanner_name,
+          dpi: detected.max_dpi,
+          color_mode: 'color',
+          is_default: false,
+          max_dpi: detected.max_dpi
+        });
+      }
     }
   }, [selectedScannerId, scanners, detectedScanners]);
-
-  useEffect(() => {
-    if (scanners.length > 0) {
-      setSelectedScannerId(scanners[0].scanner_id);
-    }
-  }, [scanners]);
 
   const onSaveScannerSettings = async () => {
     if (!selectedScanner) {
@@ -49,10 +46,14 @@ const Settings = () => {
         let result = await window.api.scanner.updateSettings(selectedScanner);
         if (result.success) {
           toast.success('Scanner settings saved');
+          let is_default = result.data.is_default;
           setScanners((prev) =>
             prev.map((x) => {
               if (x.id === selectedScanner.id) {
                 return result.data;
+              }
+              if (is_default) {
+                return { ...x, is_default: false };
               }
               return x;
             })
@@ -64,7 +65,16 @@ const Settings = () => {
         let result = await window.api.scanner.insertSettings(selectedScanner);
         if (result.success) {
           toast.success('Scanner settings saved');
-          setScanners((prev) => [...prev, result.data]);
+          let is_default = result.data.is_default;
+          if (is_default) {
+            let existing_scanner = scanners.map((x) => {
+              x.is_default = false;
+              return x;
+            });
+            setScanners([...existing_scanner, result.data]);
+          } else {
+            setScanners((prev) => [...prev, result.data]);
+          }
         } else {
           toast.error(result.error ?? 'Failed to save scanner settings');
         }
@@ -161,8 +171,13 @@ const Settings = () => {
             <Button
               variant="secondary"
               onClick={async () => {
-                let result = await window.api.scanner.getScannersList();
-                setDetectedScanners(result);
+                try {
+                  startLoader('detectScanners', 'Detecting scanners...');
+                  let result = await window.api.scanner.getScannersList();
+                  setDetectedScanners(result);
+                } finally {
+                  stopLoader('detectScanners');
+                }
               }}
             >
               Detect Scanners
@@ -178,13 +193,24 @@ const Settings = () => {
             />
             {selectedScanner && (
               <>
-                {/* is default toggle */}
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+                  <div>
+                    <p className="font-medium">Set as Default Scanner</p>
+                    <p className="text-sm text-slate-500">Use this scanner automatically for scanning documents</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedScanner((prev) => (prev ? { ...prev, is_default: !prev.is_default } : prev))}
+                    className={`h-6 w-12 rounded-full transition cursor-pointer ${selectedScanner.is_default ? 'bg-calm-accent' : 'bg-slate-300'}`}
+                  >
+                    <div className={`h-5 w-5 rounded-full bg-white transition ${selectedScanner.is_default ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
                 <Input label="Name" value={selectedScanner.scanner_name} onChange={(e) => setSelectedScanner((prev) => (prev ? { ...prev, scanner_name: e.target.value } : prev))} />
                 <Select
                   label="Resolution"
                   value={selectedScanner.dpi.toString()}
                   onChange={(v) => setSelectedScanner((prev) => (prev ? { ...prev, dpi: Number(v) as DPI } : prev))}
-                  options={DpiDropdownOptions}
+                  options={DpiDropdownOptions.filter((x) => Number(x.value) <= selectedScanner.max_dpi)}
                 />
 
                 <Select

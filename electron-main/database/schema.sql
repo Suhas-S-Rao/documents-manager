@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS scanner_settings (
     scanner_name TEXT,
     dpi INTEGER DEFAULT 300,
     color_mode TEXT DEFAULT 'Color',
-    is_default INTEGER DEFAULT 0
+    is_default INTEGER DEFAULT 0,
+    max_dpi INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS google_drive_backup (
@@ -38,10 +39,3 @@ CREATE TABLE IF NOT EXISTS google_drive_backup (
     folder_id TEXT,
     last_backup TEXT
 );
-
-INSERT INTO google_drive_backup (
-    id,
-    enabled,
-    folder_id,
-    last_backup
-)

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../../context';
 import { Tag } from '../../types';
 import { getTextColor } from '../../utils/helpers';
-import { Button, Input } from '../ui/index';
+import { Button, Input } from '../ui';
 
 interface Props {
   open: boolean;

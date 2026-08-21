@@ -2,12 +2,12 @@ import { FileXCorner } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { NavLink, useNavigate } from 'react-router-dom';
-import DeleteModal from '../../components/modals/DeleteModal';
-import { Button, DatePicker, Input, Pagination, Select } from '../../components/ui/index';
-import { SortDropDownOptions } from '../../constants';
-import { useData } from '../../context';
-import { Document as DocumentType, PageSize, Tag } from '../../types';
-import { formatFileSize, getTextColor } from '../../utils/helpers';
+import DeleteModal from '../components/modals/DeleteModal';
+import { Button, DatePicker, Input, Pagination, Select } from '../components/ui';
+import { SortDropDownOptions } from '../constants';
+import { useData } from '../context';
+import { Document as DocumentType, PageSize, Tag } from '../types';
+import { formatFileSize, getTextColor } from '../utils/helpers';
 
 interface Filters {
   search: string;

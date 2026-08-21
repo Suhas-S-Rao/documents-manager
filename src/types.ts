@@ -48,12 +48,7 @@ interface Scanner {
     dpi: number;
     color_mode: string;
     is_default: boolean;
-}
-
-interface ScannerSettings {
-    scanner: string,
-    color: ScannerColor,
-    dpi: DPI,
+    max_dpi: number;
 }
 
 type ScannerColor = "color" | "gray" | "bw";
@@ -78,7 +73,7 @@ interface GoogleDriveSettings {
 }
 
 interface Settings {
-    scanner: ScannerSettings[],
+    scanner: Scanner[],
     google: GoogleDriveSettings
 }
 
@@ -90,8 +85,9 @@ interface Loader {
 
 interface DetectedScanners {
     scanner_id: string,
-    scanner_name: string
+    scanner_name: string,
+    max_dpi: number
 }
 
-export type { CreateDocumentRequest, DetectedScanners, Document, DocumentRequest, DPI, GoogleDriveSettings, Loader, Page, PageSize, Scanner, ScannerColor, ScannerSettings, Settings, Tag };
+export type { CreateDocumentRequest, DetectedScanners, Document, DocumentRequest, DPI, GoogleDriveSettings, Loader, Page, PageSize, Scanner, ScannerColor, Settings, Tag };
 

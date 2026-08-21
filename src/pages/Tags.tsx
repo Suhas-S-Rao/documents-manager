@@ -2,12 +2,12 @@ import { FileXCorner } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
-import DeleteModal from '../../components/modals/DeleteModal';
-import TagModal from '../../components/modals/TagModal';
-import { Button, Input } from '../../components/ui/index';
-import { useData } from '../../context';
-import { Tag } from '../../types';
-import { getTextColor } from '../../utils/helpers';
+import DeleteModal from '../components/modals/DeleteModal';
+import TagModal from '../components/modals/TagModal';
+import { Button, Input } from '../components/ui';
+import { useData } from '../context';
+import { Tag } from '../types';
+import { getTextColor } from '../utils/helpers';
 
 const Tags = () => {
   const { tags, setTags, startLoader, stopLoader } = useData();

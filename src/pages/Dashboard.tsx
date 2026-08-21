@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../../context';
-import { formatFileSize } from '../../utils/helpers';
+import { useData } from '../context';
+import { formatFileSize } from '../utils/helpers';
 
 const Dashboard = () => {
   const { documents, tags, setActiveDocumentId } = useData();

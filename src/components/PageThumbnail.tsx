@@ -1,9 +1,9 @@
 import { Move, Plus, Trash } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useData } from '../../context';
-import { Page } from '../../types';
-import AddPageModal from '../modals/AddPageModal';
-import DeleteModal from '../modals/DeleteModal';
+import { useData } from '../context';
+import { Page } from '../types';
+import AddPageModal from './modals/AddPageModal';
+import DeleteModal from './modals/DeleteModal';
 
 interface Props {
   activePageId: string;

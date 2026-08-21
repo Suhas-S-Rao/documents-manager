@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
-import { useData } from '../../context';
-import type { Document as DocumentType, Page } from '../../types';
-import { loadFile } from '../../utils/api';
-import { pdfToImages } from '../../utils/pdf/pdfToImage';
+import { useData } from '../context';
+import type { Document as DocumentType, Page } from '../types';
+import { loadFile } from '../utils/api';
+import { pdfToImages } from '../utils/pdf/pdfToImage';
 import PageEditor from './PageEditor';
 import PageThumbnails from './PageThumbnail';
 

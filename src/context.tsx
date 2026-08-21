@@ -55,11 +55,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const getScanners = async () => {
     try {
       startLoader('scanner');
-      const scanners = await window.api.scanner.getScannersList();
+      const scannersDeteceted = await window.api.scanner.getScannersList();
       startLoader('scannerProperties');
-      const properties = await window.api.scanner.getProperties();
-      setDetectedScanners(scanners);
-      setScanners(properties);
+      const scannersList = await window.api.scanner.getSettings();
+      setDetectedScanners(scannersDeteceted ?? []);
+      setScanners(scannersList ?? []);
     } finally {
       stopLoader('scanner');
       stopLoader('scannerProperties');

@@ -9,7 +9,7 @@ import { GoogleDriveBackupRepository } from '../repositories/googleDriveBackup.r
 import { cleanupBackup, createZip, prepareBackup } from './backupArchive';
 import { decryptFile, encryptFile } from './encryption';
 import Database from 'better-sqlite3';
-import { delay, sendProgress } from '../utils/helpers';
+import { delay, sendProgress } from '../helpers';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const credentialsPath = path.join(app.getPath('userData'), 'credentials.json');

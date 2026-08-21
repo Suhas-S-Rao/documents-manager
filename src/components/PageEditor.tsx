@@ -2,12 +2,12 @@ import { KonvaEventObject, Node, NodeConfig } from 'konva/lib/Node';
 import { FlipHorizontal2, FlipVertical2, Maximize, Redo2, RotateCcw, RotateCw, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Circle, Image as KonvaImage, Layer, Line, Stage } from 'react-konva';
-import { Page } from '../../types';
-import enhanceImage, { type EnhanceMode } from '../../utils/imageProcessing/enhance';
-import flip, { FlipType } from '../../utils/imageProcessing/flip';
-import { perspectiveTransform, type Point } from '../../utils/imageProcessing/perspective';
-import { rotateImage } from '../../utils/imageProcessing/rotate';
-import { Button, Select } from '../ui/index';
+import { Page } from '../types';
+import enhanceImage, { type EnhanceMode } from '../utils/imageProcessing/enhance';
+import flip, { FlipType } from '../utils/imageProcessing/flip';
+import { perspectiveTransform, type Point } from '../utils/imageProcessing/perspective';
+import { rotateImage } from '../utils/imageProcessing/rotate';
+import { Button, Select } from './ui';
 
 interface Props {
   page: Page;

@@ -19,8 +19,6 @@ interface Tag {
 
 interface GoogleDriveSettings {
     enabled: boolean,
-    auto_backup: boolean,
-    backup_time: string | null,
     folder_id: string | null,
     last_backup: string | null
 }
@@ -32,6 +30,7 @@ interface ScannerSettings {
     dpi: number;
     color_mode: string;
     is_default: boolean;
+    max_dpi: number;
 }
 
 export type { Document, GoogleDriveSettings, ScannerSettings, Tag };

@@ -21,7 +21,7 @@ const api = {
         insertSettings: (scannerSettings: ScannerSettings) => ipcRenderer.invoke('scanner:insertSettings', scannerSettings),
         updateSettings: (scannerSettings: ScannerSettings) => ipcRenderer.invoke('scanner:updateSettings', scannerSettings),
         getScannersList: () => ipcRenderer.invoke('scanner:getScannersList'),
-        scan: (options: any) => ipcRenderer.invoke('scanner:scan', options),
+        scan: (scannerSetting: ScannerSettings) => ipcRenderer.invoke('scanner:scan', scannerSetting),
     },
     googleDrive: {
         getSettings: () => ipcRenderer.invoke('googleDrive:getSettings'),
