@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { v4 } from 'uuid';
-import { Button, Input, Select, TimePicker } from '../components/ui';
+import { Button, Input, Select } from '../components/ui';
 import { DpiDropdownOptions, ScannerColorDropDown } from '../constants';
 import { useData } from '../context';
 import { DPI, Scanner, ScannerColor } from '../types';
@@ -249,25 +249,6 @@ const Settings = () => {
             </div>
 
             <div className="space-y-4">
-              {settings.google.enabled && (
-                <>
-                  <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
-                    <div>
-                      <p className="font-medium">Automatic Daily Backup</p>
-                      <p className="text-sm text-slate-500">Backup automatically at scheduled time</p>
-                    </div>
-                    <button
-                      onClick={() => onGoogleSettingsChange('auto_backup', !settings.google.auto_backup)}
-                      className={`h-6 w-12 rounded-full transition cursor-pointer ${settings.google.auto_backup ? 'bg-calm-accent' : 'bg-slate-300'}`}
-                    >
-                      <div className={`h-5 w-5 rounded-full bg-white transition ${settings.google.auto_backup ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                  {settings.google.auto_backup && (
-                    <TimePicker label="Backup Time" value={settings.google.backup_time ?? ''} onChange={(v) => onGoogleSettingsChange('backup_time', v)} className="cursor-pointer" />
-                  )}
-                </>
-              )}
               <div className={`flex gap-3 w-full ${settings.google.enabled ? 'justify-between' : 'justify-end'}`}>
                 {settings.google.enabled && settings.google.last_backup && <p className="text-sm text-slate-500">Last Backup: {new Date(settings.google.last_backup).toLocaleString()}</p>}
                 <div className="flex gap-3 justify-end w-[max-content]">

@@ -66,8 +66,6 @@ type PageSize = "5" | "10" | "20" | "50" | "100" | "All";
 
 interface GoogleDriveSettings {
     enabled: boolean,
-    auto_backup: boolean,
-    backup_time: string | null,
     folder_id: string | null,
     last_backup: string | null
 }

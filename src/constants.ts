@@ -38,8 +38,6 @@ const SortDropDownOptions = [
 
 const GoogleDriveSettingsDefault: GoogleDriveSettings = {
     enabled: false,
-    auto_backup: false,
-    backup_time: '',
     folder_id: '',
     last_backup: ''
 }

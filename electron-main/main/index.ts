@@ -1,7 +1,6 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow } from 'electron';
-import path, { join } from 'node:path';
-import '../database/migrate';
+import { join } from 'node:path';
 import { setProgressWindow } from '../helpers';
 import { registerIpc } from '../ipc';
 
@@ -13,7 +12,6 @@ function createWindow(): void {
         height: 800,
         show: true,
         autoHideMenuBar: true,
-        icon: path.join(process.env.APP_ROOT!, 'build/icon.ico'),
         title: 'Document Manager',
 
         webPreferences: {
@@ -38,6 +36,8 @@ app.whenReady().then(async () => {
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window);
     });
+    await import('../database/migrate');
+
     registerIpc();
     createWindow();
     app.on('activate', function () {

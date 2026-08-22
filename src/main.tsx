@@ -4,10 +4,10 @@ import './index.css';
 import '@techstark/opencv-js';
 import { DataProvider } from './context';
 import { Toaster } from 'react-hot-toast';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
+  <HashRouter>
     <DataProvider>
       <div className="select-none">
         <App />
@@ -19,5 +19,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         />
       </div>
     </DataProvider>
-  </BrowserRouter>
+  </HashRouter>
 );

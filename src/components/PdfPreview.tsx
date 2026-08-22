@@ -23,7 +23,7 @@ const PdfPreview = () => {
     }
     const loadPdf = async () => {
       try {
-        startLoader('loadPages', 'loading file pages');
+        startLoader('loadPages', 'Loading file pages');
         if (doc.file_path && (!doc.pages || doc.pages.length === 0)) {
           const file = await loadFile(doc.file_path);
           let updatedDoc: DocumentType;

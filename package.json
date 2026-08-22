@@ -62,5 +62,34 @@
     "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"
+  },
+  "build": {
+    "appId": "com.suhas.documentmanager",
+    "productName": "Documents Manager",
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "icon": "build/logo.ico",
+    "extraResources": [
+      {
+        "from": "electron-main/database/schema.sql",
+        "to": "electron-main/database/schema.sql"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/logo.ico"
+    },
+    "asarUnpack": [
+      "**/*.node"
+    ]
   }
 }
